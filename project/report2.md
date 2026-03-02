@@ -1,10 +1,10 @@
 ---
 layout: default
-title: "Report 2"
+title: Milestone2
 parent: Project
 nav_order: 2
 ---
-# Report 2: YY
+# Milestone2
 
 {: .no_toc }
 
