@@ -6,7 +6,6 @@ nav_order: 1
 ---
 
 # Milestone 1
-Dhiren
 
 {: .no_toc }
 
