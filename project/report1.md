@@ -5,7 +5,7 @@ parent: Project
 nav_order: 1
 ---
 
-# Report 1: XX
+# Milestone 1
 
 {: .no_toc }
 
