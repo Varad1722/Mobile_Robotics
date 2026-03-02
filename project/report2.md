@@ -4,7 +4,7 @@ title: Milestone2
 parent: Project
 nav_order: 2
 ---
-# Milestone2
+# Milestone 2
 
 {: .no_toc }
 
