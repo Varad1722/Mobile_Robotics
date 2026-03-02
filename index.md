@@ -4,6 +4,15 @@ layout: home
 nav_order: 1
 ---
 
-## This is the home page!
+# Mobile Robotics Project
 
-This is a *bare-minimum* template to create a Jekyll site that uses the [Just the Docs] theme. You can easily set the created site to be published on [GitHub Pages] – the [README] file explains how to do that, along with other details.
+## Team
+- Varad Jahagirdar
+- Dhiren Makwana
+
+## Mission (draft)
+Build a ROS 2 mobile robotics system that demonstrates autonomous behavior in simulation.
+
+## Links
+- Project pages: /project/
+- Code repository: (add later)
