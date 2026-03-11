@@ -152,9 +152,6 @@ L --> M[Navigate to Throw Position]
 
 M --> N[Throw Planner Node<br/>Generate throw trajectory<br/>Compute release timing]
 
-
-
-
 N --> O[Ball Release Controller<br/>Reduce grip / open gripper<br/>at release point]
 
 O --> P[Ball Thrown Toward<br/>World Home Position]
