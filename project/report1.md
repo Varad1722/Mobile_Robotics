@@ -152,6 +152,30 @@ L --> M[Navigate to Throw Position]
 
 M --> N[Throw Planner Node<br/>Generate throw trajectory<br/>Compute release timing]
 
+
+
+
 N --> O[Ball Release Controller<br/>Reduce grip / open gripper<br/>at release point]
 
 O --> P[Ball Thrown Toward<br/>World Home Position]
+
+## System Modules
+
+| Module Name | Type | Description |
+|--------------|------|-------------|
+| Gazebo Simulation World | Library | Gazebo world with TurtleBot, arm, ball, sensors, pickup zone, and throw target. |
+| ros_gz_bridge | Library | Bridge enabling communication between Gazebo simulation and ROS2 nodes. |
+| Robot Model / TF Layer | Library | Publishes robot joint states and TF frames for kinematic transformations. |
+| Beacon Localization Node | Library | Estimates global ball position in the map frame using beacon signals. |
+| Ball Vision Node | Library | Detects the ball using camera input and publishes its pose relative to the robot. |
+| Ball Goal Generator Node | Library | Computes a navigation staging goal near the ball. |
+| Nav2 Navigation Stack | Library | Provides localization, path planning, and motion control for the mobile base. |
+| Base Alignment Node | Library | Performs fine base positioning so the ball lies within arm reach. |
+| Grasp Pose Generator Node | Library | Generates pre-grasp, grasp, and lift poses for the manipulator. |
+| MoveIt2 Manipulation Layer | Library | Handles arm motion planning and trajectory execution. |
+| Pickup Execution Node | Library | Executes arm motion and activates the vacuum gripper to pick the ball. |
+| Task Planner Node | Library | Coordinates navigation, pickup, and throwing tasks. |
+| Navigate to Throw Position | Library | Moves the robot to the predefined throwing location. |
+| CG Stability Controller | Custom | Adjusts arm posture during motion to maintain stable center of gravity. |
+| Throw Planner Node | Custom | Computes the throwing trajectory and optimal release timing. |
+| Ball Release Controller Node | Custom | Releases the ball from the vacuum gripper at the correct moment. |
