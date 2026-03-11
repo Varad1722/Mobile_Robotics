@@ -104,3 +104,47 @@ The system integrates the following ROS 2 packages and tools:
 - **OpenCV** – Camera-based object detection  
 
 The robot operates in an open environment to simplify navigation and emphasize perception–manipulation integration.
+
+# High-Level System Architecture
+
+The system follows a **Perception → Estimation → Planning → Actuation** pipeline.
+
+1. **Beacon localization** provides a coarse estimate of the ball position.  
+2. A **goal generation module** computes the navigation target.  
+3. The **Nav2 navigation stack** drives the robot toward the ball.  
+4. The **vision module** detects and refines the ball pose.  
+5. The **base alignment module** positions the robot for grasping.  
+6. The **manipulator** grasps the ball using a vacuum gripper.  
+7. The **throwing planner** computes a slinging trajectory.  
+8. The **release controller** disengages suction at the optimal moment.
+
+---
+## System Architecture
+
+```mermaid
+graph TD
+
+A[Gazebo Simulation World<br/>Indoor Environment<br/>TurtleBot + Manipulator<br/>Ball with Beacon<br/>Camera + LiDAR Sensors<br/>Pickup Zone<br/>Throw Zone / World Home]
+
+A --> B[ros_gz_bridge<br/>ROS2 - Gazebo Integration]
+B --> C[Robot Model / TF Layer<br/>robot_state_publisher<br/>joint_states<br/>TF frames]
+C --> D[Beacon Localization Node<br/>Estimate global ball pose<br/>Publishes /ball_global_pose]
+C --> F[Ball Vision Node<br/>Detect ball using camera<br/>Publishes /ball_local_pose]
+D --> E[Ball Goal Generator Node<br/>Compute staging pose<br/>Send navigation goal]
+E --> G[Nav2 Navigation Stack<br/>map_server<br/>amcl<br/>planner_server<br/>controller_server<br/>bt_navigator]
+G --> H[Base Alignment Node<br/>Fine-align robot with ball<br/>Ensure ball reachable]
+F --> H
+D --> H
+H --> I[Grasp Pose Generator<br/>Generate pre-grasp<br/>grasp and lift poses]
+I --> J[MoveIt2 Manipulation Layer<br/>move_group<br/>controller_manager<br/>joint_trajectory_controller<br/>gripper_controller]
+J --> K[Pickup Execution<br/>Pick up and hold ball]
+K --> L[Task Planner Node<br/>State Machine Controller]
+L --> M[Navigate to Throw Position]
+M --> N[Throw Planner Node<br/>Generate throw trajectory<br/>Compute release timing]
+N --> O[Ball Release Controller<br/>Reduce grip / open gripper<br/>at release point]
+O --> P[Ball Thrown Toward<br/>World Home Position]
+```
+
+## System Modules
+<img width="1125" height="440" alt="Sysm Arch table" src="https://github.com/user-attachments/assets/d6f1bf2b-06b7-41f0-8607-a194c7865046" />
+
