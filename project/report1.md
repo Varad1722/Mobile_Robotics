@@ -1,125 +1,6 @@
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 ### Custom Modules
 
-#### 🔧 CG Stability Controller
+####  CG Stability Controller
 
 Dynamically adjusts the **manipulator posture** to maintain stable center-of-gravity positioning during base motion.
 
@@ -133,7 +14,7 @@ $$x_{cg} = \frac{\sum m_i x_i}{\sum m_i}$$
 
 ---
 
-#### 🎯 Vacuum Throw Release Controller
+#### Vacuum Throw Release Controller
 
 Implements a custom **dynamic manipulation algorithm** for throwing the ball using a vacuum suction gripper.
 
