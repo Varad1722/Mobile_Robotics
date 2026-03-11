@@ -56,7 +56,7 @@ The system implements:
 - Precise base alignment to ensure the object lies within the manipulator workspace  
 - A custom dynamic throwing mechanism to return the ball to a target location  
 
-### Custom Algorithmic Modules
+**Equations:**
 
 Two task-specific control algorithms are introduced:
 
