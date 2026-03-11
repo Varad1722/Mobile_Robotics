@@ -24,7 +24,7 @@ Implements a custom **dynamic manipulation algorithm** for throwing the ball usi
 3. At the moment of **maximum tangential velocity** aligned with the desired throw direction, vacuum suction is disengaged
 4. The ball detaches and travels along a **ballistic trajectory**
 
-**Key equations:**
+**Equations:**
 
 Tangential velocity:
 $$v_t = r\omega$$
