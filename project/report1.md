@@ -1,105 +1,41 @@
----
-layout: default
-title: Milestone 1
-parent: Project
-nav_order: 1
----
+### Custom Modules
 
-# Milestone 1
+#### 🔧 CG Stability Controller
 
-{: .no_toc }
+Dynamically adjusts the **manipulator posture** to maintain stable center-of-gravity positioning during base motion.
 
-This page demonstrates the core capabilities of the Just the Docs theme, including navigation, mathematical typesetting, and technical diagrams.
+**Problem:** When the TurtleBot accelerates or decelerates, inertial forces shift the combined center of mass of the base-arm system, reducing traction and destabilizing the robot.
 
----
+**Solution:** The controller estimates the projected center of gravity and adjusts the arm configuration to keep the CoM within a stable support region reducing load transfer and improving traction consistency at the drive wheels.
 
-## Table of Contents
+**Center of Gravity Estimation:**
 
-{: .no_toc .text-delta }
-
-1. TOC
-{:toc}
+$$x_{cg} = \frac{\sum m_i x_i}{\sum m_i}$$
 
 ---
 
-## 1. Mathematical Formulas
-The probability density function of a Gaussian distribution is defined as:
+#### 🎯 Vacuum Throw Release Controller
 
-$$p(x) = \frac{1}{\sigma\sqrt{2\pi}} e^{-\frac{1}{2}\left(\frac{x-\mu}{\sigma}\right)^2}$$
+Implements a custom **dynamic manipulation algorithm** for throwing the ball using a vacuum suction gripper.
 
-Where:
-- $$\mu$$ is the mean (peak location).
-- $$\sigma$$ is the standard deviation (width of the "bell").
+**How it works:**
+1. The manipulator performs a forward slinging motion, accelerating the end effector
+2. The algorithm monitors the arm trajectory
+3. At the moment of **maximum tangential velocity** aligned with the desired throw direction, vacuum suction is disengaged
+4. The ball detaches and travels along a **ballistic trajectory**
 
----
+**Key equations:**
 
-## 2. Code Implementation
+Tangential velocity:
+$$v_t = r\omega$$
 
-Below is a snippet of the Python code used to process the assignment data.
+Projectile range approximation:
+$$R = \frac{v^2 \sin(2\theta)}{g}$$
 
-```python
-import numpy as np
-
-def calculate_velocity(displacement, time):
-    """Calculates average velocity."""
-    return np.divide(displacement, time)
-
-print(f"Result: {calculate_velocity(100, 20)} m/s")
-
-```
+> By synchronizing release timing with arm motion, the system maximizes throwing **range and repeatability**.
 
 ---
 
-## 3. Section & Sub-sections
+<div align="center">
 
-The sidebar will automatically highlight the section you are currently viewing.
-
-### 3.1 Observations
-
-* Observation A: The system remained stable under load.
-* Observation B: Latency increased during the second trial.
-
-### 3.2 Conclusion
-
-The experiment met all primary objectives. Future work should focus on optimizing the data pipeline.
-
----
-
-## 4. Media
-
-You can include images by placing them in the `assets/images/` folder.
-
-![Alt text](../assets/images/logo.png){: width="500" }
-
-*Figure 1: Class Logo*
-
----
-
-## 5. Submission Checklist
-
-* [x] Complete Markdown documentation
-* [x] Verify LaTeX rendering
-* [x] Generate Mermaid flowchart
-* [ ] Peer review feedback
-
-# Markdown Features
-
-## Callouts
-> This is a note
-{: .note }
-
-> This is a warning
-{: .warning }
-
-## Buttons
-[Main Button](assignment1.html){: .btn .btn-primary }
-[Blue Button](assignment2.html){: .btn .btn-blue }
-[Blue Button](assignment3.html){: .btn .btn-red }
-
-## Tables
-
-| Header | Header |
-| :--- | :--- |
-| Cell | Cell |
-
----
+</div>
