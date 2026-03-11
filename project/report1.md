@@ -101,3 +101,17 @@ The system integrates the following ROS 2 packages and tools:
 - **OpenCV** – Camera-based object detection  
 
 The robot operates in an open environment to simplify navigation and emphasize perception–manipulation integration.
+
+
+# High-Level System Architecture
+
+The system follows a **Perception → Estimation → Planning → Actuation** pipeline.
+
+1. **Beacon localization** provides a coarse estimate of the ball position.  
+2. A **goal generation module** computes the navigation target.  
+3. The **Nav2 navigation stack** drives the robot toward the ball.  
+4. The **vision module** detects and refines the ball pose.  
+5. The **base alignment module** positions the robot for grasping.  
+6. The **manipulator** grasps the ball using a vacuum gripper.  
+7. The **throwing planner** computes a slinging trajectory.  
+8. The **release controller** disengages suction at the optimal moment.
