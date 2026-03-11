@@ -124,43 +124,26 @@ graph TD
 A[Gazebo Simulation World<br/>Indoor Environment<br/>TurtleBot + Manipulator<br/>Ball with Beacon<br/>Camera + LiDAR Sensors<br/>Pickup Zone<br/>Throw Zone / World Home]
 
 A --> B[ros_gz_bridge<br/>ROS2 - Gazebo Integration]
-
 B --> C[Robot Model / TF Layer<br/>robot_state_publisher<br/>joint_states<br/>TF frames]
-
 C --> D[Beacon Localization Node<br/>Estimate global ball pose<br/>Publishes /ball_global_pose]
-
 C --> F[Ball Vision Node<br/>Detect ball using camera<br/>Publishes /ball_local_pose]
-
 D --> E[Ball Goal Generator Node<br/>Compute staging pose<br/>Send navigation goal]
-
 E --> G[Nav2 Navigation Stack<br/>map_server<br/>amcl<br/>planner_server<br/>controller_server<br/>bt_navigator]
-
 G --> H[Base Alignment Node<br/>Fine-align robot with ball<br/>Ensure ball reachable]
-
 F --> H
 D --> H
-
 H --> I[Grasp Pose Generator<br/>Generate pre-grasp<br/>grasp and lift poses]
-
 I --> J[MoveIt2 Manipulation Layer<br/>move_group<br/>controller_manager<br/>joint_trajectory_controller<br/>gripper_controller]
-
 J --> K[Pickup Execution<br/>Pick up and hold ball]
-
 K --> L[Task Planner Node<br/>State Machine Controller]
-
 L --> M[Navigate to Throw Position]
-
 M --> N[Throw Planner Node<br/>Generate throw trajectory<br/>Compute release timing]
-
 N --> O[Ball Release Controller<br/>Reduce grip / open gripper<br/>at release point]
-
 O --> P[Ball Thrown Toward<br/>World Home Position]
-
-```markdown
+```
 
 ## System Modules
 
 <p align="center">
   <img src="assets/images/sys_arch_table.png" width="900">
 </p>
-
