@@ -157,6 +157,5 @@ $$R = \frac{v^2 \sin(2\theta)}{g}$$
 
 <div align="center">
 
-*Milestone 1 — System Design & Module Declaration*
 
 </div>
