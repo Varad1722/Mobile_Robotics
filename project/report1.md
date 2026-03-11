@@ -156,6 +156,7 @@ N --> O[Ball Release Controller<br/>Reduce grip / open gripper<br/>at release po
 
 O --> P[Ball Thrown Toward<br/>World Home Position]
 
+```markdown
 
 
 ![System Architecture Table](assets/images/sysm_arch_table.png)
