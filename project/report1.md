@@ -167,7 +167,7 @@ This project focuses on the integration of **perception, estimation, planning, a
 The robotic platform consists of:
 
 - A **TurtleBot mobile base**
-- A **robotic manipulator arm**
+- A **Robotic manipulator arm**
 - A **Gazebo-based simulation environment**
 
 ### Perception System
