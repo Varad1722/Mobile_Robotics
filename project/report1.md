@@ -4,101 +4,114 @@ title: Milestone 1
 parent: Project
 nav_order: 1
 ---
+
 # Milestone 1
 
-{: .no_toc }
+# Mission Statement & Scope
 
-This page demonstrates the core capabilities of the Just the Docs theme, including navigation, mathematical typesetting, and technical diagrams.
+## Mission Statement
 
----
+The mission of this project is to develop an autonomous **mobile manipulation system** capable of locating, retrieving, and dynamically throwing a ball in a simulated environment.  
 
-## Table of Contents
+The system integrates:
 
-{: .no_toc .text-delta }
+- Global beacon-based localization  
+- Vision-based object detection  
+- Autonomous navigation  
+- Robotic manipulation  
 
-1. TOC
-{:toc}
+All components operate within a **ROS 2 and Gazebo simulation framework**.
 
----
+The robot must autonomously:
 
-## 1. Mathematical Formulas
-The probability density function of a Gaussian distribution is defined as:
-
-$$p(x) = \frac{1}{\sigma\sqrt{2\pi}} e^{-\frac{1}{2}\left(\frac{x-\mu}{\sigma}\right)^2}$$
-
-Where:
-- $$\mu$$ is the mean (peak location).
-- $$\sigma$$ is the standard deviation (width of the "bell").
+1. Detect the ball  
+2. Navigate toward it  
+3. Pick it up using a vacuum-based gripper  
+4. Execute a dynamic throwing action toward a predefined target location  
 
 ---
 
-## 2. Code Implementation
+## Scope
 
-Below is a snippet of the Python code used to process the assignment data.
+This project focuses on the integration of **perception, estimation, planning, and actuation** modules required for mobile manipulation.
 
-```python
-import numpy as np
+The robotic platform consists of:
 
-def calculate_velocity(displacement, time):
-    """Calculates average velocity."""
-    return np.divide(displacement, time)
+- A **TurtleBot mobile base**
+- A **robotic manipulator arm**
+- A **Gazebo-based simulation environment**
 
-print(f"Result: {calculate_velocity(100, 20)} m/s")
+### Perception System
 
-```
+The perception stack combines:
 
----
+- **Beacon-based localization** to estimate the global position of the ball  
+- **Camera-based vision module** to refine the ball’s local pose for manipulation  
 
-## 3. Section & Sub-sections
+### System Capabilities
 
-The sidebar will automatically highlight the section you are currently viewing.
+The system implements:
 
-### 3.1 Observations
+- Autonomous navigation to approach the ball  
+- Precise base alignment to ensure the object lies within the manipulator workspace  
+- A custom dynamic throwing mechanism to return the ball to a target location  
 
-* Observation A: The system remained stable under load.
-* Observation B: Latency increased during the second trial.
+**Equations:**
 
-### 3.2 Conclusion
+Two task-specific control algorithms are introduced:
 
-The experiment met all primary objectives. Future work should focus on optimizing the data pipeline.
+- **Center-of-Gravity (CG) Stability Controller**  
+  Dynamically adjusts manipulator posture during base motion to maintain system stability.
 
----
+- **Vacuum Throw Release Controller**  
+  Synchronizes suction release with peak tangential velocity during the arm swing to maximize throwing performance.
 
-## 4. Media
+### Environment Assumptions
 
-You can include images by placing them in the `assets/images/` folder.
+The current system operates in an **open indoor simulated environment without obstacles**.  
 
-![Alt text](../assets/images/logo.png){: width="500" }
+This allows the project to focus on subsystem integration and coordination. Future extensions may introduce:
 
-*Figure 1: Class Logo*
-
----
-
-## 5. Submission Checklist
-
-* [x] Complete Markdown documentation
-* [x] Verify LaTeX rendering
-* [x] Generate Mermaid flowchart
-* [ ] Peer review feedback
-
-# Markdown Features
-
-## Callouts
-> This is a note
-{: .note }
-
-> This is a warning
-{: .warning }
-
-## Buttons
-[Main Button](assignment1.html){: .btn .btn-primary }
-[Blue Button](assignment2.html){: .btn .btn-blue }
-[Blue Button](assignment3.html){: .btn .btn-red }
-
-## Tables
-
-| Header | Header |
-| :--- | :--- |
-| Cell | Cell |
+- Obstacle-rich environments  
+- More advanced manipulation tasks  
 
 ---
+
+# Technical Specifications
+
+## Robot Platform
+
+The robotic system is implemented using:
+
+- **ROS 2** as the middleware framework  
+- **Gazebo** for physics-based simulation  
+
+The platform consists of a **TurtleBot mobile base** integrated with a **robotic manipulator arm**, enabling autonomous object retrieval and dynamic throwing.
+
+## Software Frameworks
+
+The system integrates the following ROS 2 packages and tools:
+
+- **Gazebo** – Physics-based simulation environment  
+- **ROS 2** – Distributed robotic communication framework  
+- **Nav2** – Autonomous navigation stack  
+- **MoveIt2** – Manipulation planning and trajectory execution  
+- **TF2** – Coordinate frame transformation system  
+- **RViz2** – Visualization and debugging interface  
+- **OpenCV** – Camera-based object detection  
+
+The robot operates in an open environment to simplify navigation and emphasize perception–manipulation integration.
+
+
+# High-Level System Architecture
+
+The system follows a **Perception → Estimation → Planning → Actuation** pipeline.
+
+1. **Beacon localization** provides a coarse estimate of the ball position.  
+2. A **goal generation module** computes the navigation target.  
+3. The **Nav2 navigation stack** drives the robot toward the ball.  
+4. The **vision module** detects and refines the ball pose.  
+5. The **base alignment module** positions the robot for grasping.  
+6. The **manipulator** grasps the ball using a vacuum gripper.  
+7. The **throwing planner** computes a slinging trajectory.  
+8. The **release controller** disengages suction at the optimal moment.
