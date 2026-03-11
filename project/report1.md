@@ -181,7 +181,7 @@ The perception stack combines:
 
 The system implements:
 
-- Autonomous navigation to approach the ball  
+- Autonomous Navigation to approach the ball  
 - Precise base alignment to ensure the object lies within the manipulator workspace  
 - A custom dynamic throwing mechanism to return the ball to a target location  
 
