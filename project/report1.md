@@ -1,139 +1,11 @@
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-### Custom Modules
-
-####  CG Stability Controller
-
-Dynamically adjusts the **manipulator posture** to maintain stable center-of-gravity positioning during base motion.
-
-**Problem:** When the TurtleBot accelerates or decelerates, inertial forces shift the combined center of mass of the base-arm system, reducing traction and destabilizing the robot.
-
-**Solution:** The controller estimates the projected center of gravity and adjusts the arm configuration to keep the CoM within a stable support region — reducing load transfer and improving traction consistency at the drive wheels.
-
-**Center of Gravity Estimation:**
-
-$$x_{cg} = \frac{\sum m_i x_i}{\sum m_i}$$
-
+---
+layout: default
+title: Milestone 1
+parent: Project
+nav_order: 1
 ---
 
-#### Vacuum Throw Release Controller
+
 # Milestone 1
 
 # Mission Statement & Scope
@@ -167,7 +39,7 @@ This project focuses on the integration of **perception, estimation, planning, a
 The robotic platform consists of:
 
 - A **TurtleBot mobile base**
-- A **robotic manipulator arm**
+- A **Robotic manipulator arm**
 - A **Gazebo-based simulation environment**
 
 ### Perception System
@@ -181,7 +53,7 @@ The perception stack combines:
 
 The system implements:
 
-- Autonomous navigation to approach the ball  
+- Autonomous Navigation to approach the ball  
 - Precise base alignment to ensure the object lies within the manipulator workspace  
 - A custom dynamic throwing mechanism to return the ball to a target location  
 
