@@ -120,30 +120,9 @@ The system follows a **Perception → Estimation → Planning → Actuation** pi
 
 ---
 ## System Architecture
+<img width="1690" height="4159" alt="mermaid-diagram" src="https://github.com/user-attachments/assets/6f018392-76c6-4b76-8c53-df585cb9737e" />
 
-```mermaid
-graph TD
 
-A[Gazebo Simulation World<br/>Indoor Environment<br/>TurtleBot + Manipulator<br/>Ball with Beacon<br/>Camera + LiDAR Sensors<br/>Pickup Zone<br/>Throw Zone / World Home]
-
-A --> B[ros_gz_bridge<br/>ROS2 - Gazebo Integration]
-B --> C[Robot Model / TF Layer<br/>robot_state_publisher<br/>joint_states<br/>TF frames]
-C --> D[Beacon Localization Node<br/>Estimate global ball pose<br/>Publishes /ball_global_pose]
-C --> F[Ball Vision Node<br/>Detect ball using camera<br/>Publishes /ball_local_pose]
-D --> E[Ball Goal Generator Node<br/>Compute staging pose<br/>Send navigation goal]
-E --> G[Nav2 Navigation Stack<br/>map_server<br/>amcl<br/>planner_server<br/>controller_server<br/>bt_navigator]
-G --> H[Base Alignment Node<br/>Fine-align robot with ball<br/>Ensure ball reachable]
-F --> H
-D --> H
-H --> I[Grasp Pose Generator<br/>Generate pre-grasp<br/>grasp and lift poses]
-I --> J[MoveIt2 Manipulation Layer<br/>move_group<br/>controller_manager<br/>joint_trajectory_controller<br/>gripper_controller]
-J --> K[Pickup Execution<br/>Pick up and hold ball]
-K --> L[Task Planner Node<br/>State Machine Controller]
-L --> M[Navigate to Throw Position]
-M --> N[Throw Planner Node<br/>Generate throw trajectory<br/>Compute release timing]
-N --> O[Ball Release Controller<br/>Reduce grip / open gripper<br/>at release point]
-O --> P[Ball Thrown Toward<br/>World Home Position]
-```
 
 ## System Modules
 <img width="1125" height="440" alt="Sysm Arch table" src="https://github.com/user-attachments/assets/d6f1bf2b-06b7-41f0-8607-a194c7865046" />
@@ -151,7 +130,7 @@ O --> P[Ball Thrown Toward<br/>World Home Position]
 
 ### Custom Modules
 
-#### 🔧 CG Stability Controller
+#### CG Stability Controller
 
 Dynamically adjusts the **manipulator posture** to maintain stable center-of-gravity positioning during base motion.
 
@@ -165,7 +144,7 @@ $$x_{cg} = \frac{\sum m_i x_i}{\sum m_i}$$
 
 ---
 
-#### 🎯 Vacuum Throw Release Controller
+####  Vacuum Throw Release Controller
 
 Implements a custom **dynamic manipulation algorithm** for throwing the ball using a vacuum suction gripper.
 
@@ -182,8 +161,7 @@ $$v_t = r\omega$$
 
 Projectile range approximation:
 $$R = \frac{v^2 \sin(2\theta)}{g}$$
-
-> By synchronizing release timing with arm motion, the system maximizes throwing **range and repeatability**.
+By synchronizing release timing with arm motion, the system maximizes throwing **range and repeatability**.
 
 ---
 
