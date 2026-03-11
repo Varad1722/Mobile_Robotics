@@ -158,5 +158,9 @@ O --> P[Ball Thrown Toward<br/>World Home Position]
 
 ```markdown
 
+## System Modules
 
+<p align="center">
+  <img src="assets/images/sys_arch_table.png" width="900">
+</p>
 
