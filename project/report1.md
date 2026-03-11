@@ -30,7 +30,9 @@ The robot must autonomously:
 3. Pick it up using a vacuum-based gripper  
 4. Execute a dynamic throwing action toward a predefined target location  
 
----
+- A **TurtleBot mobile base**
+- A **robotic manipulator arm**
+- A **Gazebo-based simulation environment**
 
 ## Scope
 
@@ -76,7 +78,7 @@ This allows the project to focus on subsystem integration and coordination. Futu
 - Obstacle-rich environments  
 - More advanced manipulation tasks  
 
----
+The platform consists of a **TurtleBot mobile base** integrated with a **robotic manipulator arm**, enabling autonomous object retrieval and dynamic throwing.
 
 # Technical Specifications
 
