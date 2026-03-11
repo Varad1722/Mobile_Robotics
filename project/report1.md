@@ -1,10 +1,3 @@
----
-layout: default
-title: Milestone 1
-parent: Project
-nav_order: 1
----
-
 # Milestone 1
 
 # Mission Statement & Scope
