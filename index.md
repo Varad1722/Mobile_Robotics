@@ -9,7 +9,7 @@ nav_order: 1
 ## Team
 - Varad Jahagirdar
 - Dhiren Makwana
-
+- Sharat Mylavarapu
 ## Mission (draft)
 Build a ROS 2 mobile robotics system that demonstrates autonomous behavior in simulation.
 
