@@ -93,18 +93,6 @@
       </link>
     </model>
 
-    <model name="beacon_nw">
-      <static>true</static>
-      <pose>-4.5 4.5 0.75 0 0 0</pose>
-      <link name="link">
-        <collision name="collision"><geometry><cylinder><radius>0.1</radius><length>1.5</length></cylinder></geometry></collision>
-        <visual name="visual">
-          <geometry><cylinder><radius>0.1</radius><length>1.5</length></cylinder></geometry>
-          <material><ambient>0 1 0 1</ambient><diffuse>0 1 0 1</diffuse></material>
-        </visual>
-      </link>
-    </model>
-
     <model name="beacon_se">
       <static>true</static>
       <pose>4.5 -4.5 0.75 0 0 0</pose>
@@ -140,38 +128,125 @@
       </link>
     </model>
 
-    <model name="obstacle_cube">
+    <!-- Row 1 obstacles (y ~ -2.5) -->
+    <model name="obs_1">
       <static>true</static>
-      <pose>1.5 1.0 0.3 0 0 0.4</pose>
+      <pose>-3.0 -2.5 0.2 0 0 0.3</pose>
       <link name="link">
-        <collision name="collision"><geometry><box><size>0.6 0.6 0.6</size></box></geometry></collision>
+        <collision name="collision"><geometry><box><size>0.4 0.4 0.4</size></box></geometry></collision>
         <visual name="visual">
-          <geometry><box><size>0.6 0.6 0.6</size></box></geometry>
+          <geometry><box><size>0.4 0.4 0.4</size></box></geometry>
           <material><ambient>0.2 0.4 0.8 1</ambient><diffuse>0.2 0.4 0.8 1</diffuse></material>
         </visual>
       </link>
     </model>
 
-    <model name="obstacle_cuboid">
+    <model name="obs_2">
       <static>true</static>
-      <pose>-1.0 1.5 0.4 0 0 0.8</pose>
+      <pose>0.0 -2.5 0.25 0 0 0</pose>
       <link name="link">
-        <collision name="collision"><geometry><box><size>1.5 0.3 0.8</size></box></geometry></collision>
+        <collision name="collision"><geometry><cylinder><radius>0.2</radius><length>0.5</length></cylinder></geometry></collision>
         <visual name="visual">
-          <geometry><box><size>1.5 0.3 0.8</size></box></geometry>
+          <geometry><cylinder><radius>0.2</radius><length>0.5</length></cylinder></geometry>
           <material><ambient>0.6 0.2 0.2 1</ambient><diffuse>0.6 0.2 0.2 1</diffuse></material>
         </visual>
       </link>
     </model>
 
-    <model name="obstacle_cylinder">
+    <model name="obs_3">
       <static>true</static>
-      <pose>0.5 -1.5 0.4 0 0 0</pose>
+      <pose>3.0 -2.5 0.25 0 0 0.5</pose>
       <link name="link">
-        <collision name="collision"><geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry></collision>
+        <collision name="collision"><geometry><box><size>0.8 0.2 0.5</size></box></geometry></collision>
         <visual name="visual">
-          <geometry><cylinder><radius>0.25</radius><length>0.8</length></cylinder></geometry>
+          <geometry><box><size>0.8 0.2 0.5</size></box></geometry>
+          <material><ambient>0.8 0.5 0.1 1</ambient><diffuse>0.8 0.5 0.1 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Row 2 obstacles (y ~ 0.0) -->
+    <model name="obs_4">
+      <static>true</static>
+      <pose>-3.0 0.0 0.2 0 0 0</pose>
+      <link name="link">
+        <collision name="collision"><geometry><cylinder><radius>0.2</radius><length>0.4</length></cylinder></geometry></collision>
+        <visual name="visual">
+          <geometry><cylinder><radius>0.2</radius><length>0.4</length></cylinder></geometry>
+          <material><ambient>0.5 0.1 0.7 1</ambient><diffuse>0.5 0.1 0.7 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="obs_5">
+      <static>true</static>
+      <pose>-1.0 0.0 0.25 0 0 0.8</pose>
+      <link name="link">
+        <collision name="collision"><geometry><box><size>0.4 0.4 0.5</size></box></geometry></collision>
+        <visual name="visual">
+          <geometry><box><size>0.4 0.4 0.5</size></box></geometry>
           <material><ambient>0.2 0.7 0.3 1</ambient><diffuse>0.2 0.7 0.3 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="obs_6">
+      <static>true</static>
+      <pose>1.5 0.0 0.25 0 0 0.3</pose>
+      <link name="link">
+        <collision name="collision"><geometry><box><size>0.8 0.2 0.5</size></box></geometry></collision>
+        <visual name="visual">
+          <geometry><box><size>0.8 0.2 0.5</size></box></geometry>
+          <material><ambient>0.9 0.2 0.2 1</ambient><diffuse>0.9 0.2 0.2 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="obs_7">
+      <static>true</static>
+      <pose>3.5 0.0 0.2 0 0 0</pose>
+      <link name="link">
+        <collision name="collision"><geometry><cylinder><radius>0.2</radius><length>0.4</length></cylinder></geometry></collision>
+        <visual name="visual">
+          <geometry><cylinder><radius>0.2</radius><length>0.4</length></cylinder></geometry>
+          <material><ambient>0.1 0.5 0.8 1</ambient><diffuse>0.1 0.5 0.8 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Row 3 obstacles (y ~ 2.5) -->
+    <model name="obs_8">
+      <static>true</static>
+      <pose>-3.0 2.5 0.2 0 0 0.5</pose>
+      <link name="link">
+        <collision name="collision"><geometry><box><size>0.4 0.4 0.4</size></box></geometry></collision>
+        <visual name="visual">
+          <geometry><box><size>0.4 0.4 0.4</size></box></geometry>
+          <material><ambient>0.8 0.8 0.1 1</ambient><diffuse>0.8 0.8 0.1 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="obs_9">
+      <static>true</static>
+      <pose>0.0 2.5 0.25 0 0 0</pose>
+      <link name="link">
+        <collision name="collision"><geometry><cylinder><radius>0.2</radius><length>0.5</length></cylinder></geometry></collision>
+        <visual name="visual">
+          <geometry><cylinder><radius>0.2</radius><length>0.5</length></cylinder></geometry>
+          <material><ambient>0.2 0.8 0.6 1</ambient><diffuse>0.2 0.8 0.6 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <model name="obs_10">
+      <static>true</static>
+      <pose>3.0 2.5 0.25 0 0 0.2</pose>
+      <link name="link">
+        <collision name="collision"><geometry><box><size>0.8 0.2 0.5</size></box></geometry></collision>
+        <visual name="visual">
+          <geometry><box><size>0.8 0.2 0.5</size></box></geometry>
+          <material><ambient>0.7 0.3 0.7 1</ambient><diffuse>0.7 0.3 0.7 1</diffuse></material>
         </visual>
       </link>
     </model>

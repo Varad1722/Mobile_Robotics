@@ -104,4 +104,11 @@ def generate_launch_description():
                 ),
             ]
         ),
+        # Beacon localization node
+        Node(
+            package='locobot_nodes',
+            executable='beacon_localization',
+            output='screen',
+            parameters=[{'use_sim_time': True}],
+        ),
     ])
