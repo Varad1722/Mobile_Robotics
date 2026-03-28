@@ -95,10 +95,7 @@
             <stddev>0.01</stddev>
           </noise>
         </ray>
-        <plugin name="gazebo_ros_head_rplidar_controller" filename="libgazebo_ros_laser.so">
-          <topicName>scan</topicName>
-        <frameName>$(arg robot_name)/laser_frame_link</frameName>
-        </plugin>
+        <!-- ROS1 laser plugin removed for Gazebo Harmonic compatibility -->
       </sensor>
     </gazebo>
 
