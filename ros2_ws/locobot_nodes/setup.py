@@ -25,6 +25,8 @@ setup(
     entry_points={
         'console_scripts': [
             'beacon_localization = locobot_nodes.beacon_localization:main',
+            'odom_tf_broadcaster = locobot_nodes.odom_tf_broadcaster:main',
+            'gz_lidar_sim = locobot_nodes.gz_lidar_sim:main',
         ],
     },
 )
