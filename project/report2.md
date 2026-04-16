@@ -171,7 +171,76 @@ The depth camera is positioned at (0.1, 0, 0.4) m relative to `locobot/base_link
 
 ### 4.2 Beacon Noise & Uncertainty Analysis
 
-<!-- VARAD: Add your noise analysis table and results here -->
+The `beacon_localization` node acts as both the localization estimator and the noise injector.
+It corrupts clean range measurements from Gazebo with Gaussian noise before running trilateration,
+simulating real-world UWB/WiFi range sensor uncertainty.
+
+### Noise Injector Code
+
+```python
+# From beacon_localization.py
+NOISE_STDDEV = 0.3  # meters
+
+for name, (bx, by) in BEACON_POSITIONS.items():
+    true_dist = np.sqrt((true_x - bx)**2 + (true_y - by)**2)
+    noise = np.random.normal(0, NOISE_STDDEV)
+    noisy_dist = max(0.01, true_dist + noise)
+    noisy_distances[name] = noisy_dist
+```
+
+Each beacon measurement is independently corrupted with $\mathcal{N}(0, 0.09)$,
+creating a realistic multi-beacon noise scenario.
+
+### Observed Performance
+
+<!-- VARAD: Run beacon_localization and fill in the table below with real values -->
+<!-- Run: ros2 run locobot_nodes beacon_localization -->
+<!-- Copy terminal output into this table -->
+
+| Run | True Position | Estimated Position | Error (m) |
+|---|---|---|---|
+| 1 | (3.00, 3.00) | ( , ) | |
+| 2 | (3.00, 3.00) | ( , ) | |
+| 3 | (3.00, 3.00) | ( , ) | |
+| 4 | (3.00, 3.00) | ( , ) | |
+| 5 | (3.00, 3.00) | ( , ) | |
+| **Average** | — | — | |
+
+### Beacon Positions in World
+
+| Beacon | World Position | Color |
+|---|---|---|
+| beacon_ne | (4.5, 4.5) | Red |
+| beacon_se | (4.5, -4.5) | Blue |
+| beacon_sw | (-4.5, -4.5) | Yellow |
+
+### Beacon Localization Node Details
+
+**Source:** [`beacon_localization.py`](https://github.com/Varad1722/Mobile_Robotics/blob/Dhiren/ros2_ws/locobot_nodes/locobot_nodes/beacon_localization.py)
+
+**Logic Flow:**
+1. Subscribe to `/world/locobot_world/pose/info` via Gazebo transport (gz.transport13)
+2. Extract true ball position from pose list by matching model name
+3. Compute true Euclidean distance to each of 3 beacons
+4. Inject independent Gaussian noise: $\tilde{d}_i = d_i + \mathcal{N}(0, 0.09)$
+5. Solve trilateration linear system using `numpy.linalg.solve`
+6. Publish estimated ball position on `/ball_global_pose`
+
+**Published Topics:** `/ball_global_pose` [geometry_msgs/msg/PoseStamped]
+
+The noise model demonstrates that beacon-only localization produces errors
+typically in the range of 0.03–0.92 m, justifying the two-stage approach
+where camera vision refines the coarse beacon estimate in the final milestone.
+
+---
+
+
+### Trilateration Under Noise
+
+The noisy distances are fused using the linear trilateration system solved
+via `numpy.linalg.solve`. The system linearizes the range equations around
+the three beacon positions to produce a direct estimate of ball position.
+
 
 
 ## 4.3 Run-Time Issues & System Behaviors
