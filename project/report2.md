@@ -57,18 +57,25 @@ The `odom_tf_broadcaster` node subscribes to `/odom` and re-publishes the transf
 
 ### 1.3 Beacon Trilateration Model
 
-Given 3 beacons at known positions $(x_i, y_i)$ with noisy range measurements $\tilde{d}_i$, the ball position $(x_b, y_b)$ is estimated by solving:
-
-$$\mathbf{A} \mathbf{p} = \mathbf{b}$$
-
-where:
-
-$$A = 2\begin{bmatrix} x_2 - x_1 & y_2 - y_1 \\ x_3 - x_1 & y_3 - y_1 \end{bmatrix}, \quad b = \begin{bmatrix} \tilde{d}_1^2 - \tilde{d}_2^2 - x_1^2 + x_2^2 - y_1^2 + y_2^2 \\ \tilde{d}_1^2 - \tilde{d}_3^2 - x_1^2 + x_3^2 - y_1^2 + y_3^2 \end{bmatrix}$$
-
-The noisy range measurements are modeled as:
-
-$$\tilde{d}_i = d_i + \mathcal{N}(0, \sigma^2), \quad \sigma = 0.3 \text{ m}$$
-
+Given three beacons at known positions $(b_{x_1}, b_{y_1})$, $(b_{x_2}, b_{y_2})$, $(b_{x_3}, b_{y_3})$
+with noisy range measurements $r_1, r_2, r_3$, the ball position $(x, y)$ satisfies:
+ 
+$$(x - b_{x_i})^2 + (y - b_{y_i})^2 = r_i^2, \quad i = 1, 2, 3$$
+ 
+Subtracting equation 1 from equations 2 and 3 linearizes the system:
+ 
+$$2(b_{x_2} - b_{x_1})x + 2(b_{y_2} - b_{y_1})y = r_1^2 - r_2^2 - b_{x_1}^2 + b_{x_2}^2 - b_{y_1}^2 + b_{y_2}^2$$
+ 
+$$2(b_{x_3} - b_{x_1})x + 2(b_{y_3} - b_{y_1})y = r_1^2 - r_3^2 - b_{x_1}^2 + b_{x_3}^2 - b_{y_1}^2 + b_{y_3}^2$$
+ 
+In matrix form $\mathbf{A}\mathbf{p} = \mathbf{b}$:
+ 
+$$\mathbf{A} = \begin{bmatrix} 2(b_{x_2}-b_{x_1}) & 2(b_{y_2}-b_{y_1}) \\ 2(b_{x_3}-b_{x_1}) & 2(b_{y_3}-b_{y_1}) \end{bmatrix}, \quad \mathbf{p} = \begin{bmatrix} x \\ y \end{bmatrix}$$
+ 
+$$\mathbf{b} = \begin{bmatrix} r_1^2 - r_2^2 - b_{x_1}^2 + b_{x_2}^2 - b_{y_1}^2 + b_{y_2}^2 \\ r_1^2 - r_3^2 - b_{x_1}^2 + b_{x_3}^2 - b_{y_1}^2 + b_{y_3}^2 \end{bmatrix}$$
+ 
+Solved via `numpy.linalg.solve(A, b)`.
+ 
 ---
 
 ## 2. System Architecture
@@ -208,30 +215,8 @@ creating a realistic multi-beacon noise scenario.
  
 ---
  
-### Trilateration Math
- 
-Given three beacons at known positions $(b_{x_1}, b_{y_1})$, $(b_{x_2}, b_{y_2})$, $(b_{x_3}, b_{y_3})$
-with noisy range measurements $r_1, r_2, r_3$, the ball position $(x, y)$ satisfies:
- 
-$$(x - b_{x_i})^2 + (y - b_{y_i})^2 = r_i^2, \quad i = 1, 2, 3$$
- 
-Subtracting equation 1 from equations 2 and 3 linearizes the system:
- 
-$$2(b_{x_2} - b_{x_1})x + 2(b_{y_2} - b_{y_1})y = r_1^2 - r_2^2 - b_{x_1}^2 + b_{x_2}^2 - b_{y_1}^2 + b_{y_2}^2$$
- 
-$$2(b_{x_3} - b_{x_1})x + 2(b_{y_3} - b_{y_1})y = r_1^2 - r_3^2 - b_{x_1}^2 + b_{x_3}^2 - b_{y_1}^2 + b_{y_3}^2$$
- 
-In matrix form $\mathbf{A}\mathbf{p} = \mathbf{b}$:
- 
-$$\mathbf{A} = \begin{bmatrix} 2(b_{x_2}-b_{x_1}) & 2(b_{y_2}-b_{y_1}) \\ 2(b_{x_3}-b_{x_1}) & 2(b_{y_3}-b_{y_1}) \end{bmatrix}, \quad \mathbf{p} = \begin{bmatrix} x \\ y \end{bmatrix}$$
- 
-$$\mathbf{b} = \begin{bmatrix} r_1^2 - r_2^2 - b_{x_1}^2 + b_{x_2}^2 - b_{y_1}^2 + b_{y_2}^2 \\ r_1^2 - r_3^2 - b_{x_1}^2 + b_{x_3}^2 - b_{y_1}^2 + b_{y_3}^2 \end{bmatrix}$$
- 
-Solved via `numpy.linalg.solve(A, b)`.
- 
----
- 
-### Assumptions
+
+ ### Assumptions
  
 - Beacon positions are perfectly known (no anchor uncertainty)
 - Noise is independent and identically distributed (i.i.d.) across beacons
