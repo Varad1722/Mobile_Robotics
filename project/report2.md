@@ -173,10 +173,88 @@ The depth camera is positioned at (0.1, 0, 0.4) m relative to `locobot/base_link
 
 <!-- VARAD: Add your noise analysis table and results here -->
 
-### 4.3 Run-Time Issues & System Behaviors
 
-<!-- SHARAT: Add your run-time issues section here -->
+## 4.3 Run-Time Issues & System Behaviors
 
+The following run-time issues were observed and resolved during development
+and testing of the autonomous navigation system:
+
+### Issue 1: TF Tree Disconnection
+
+**Observed Behavior:**
+Nav2 repeatedly logged:
+```
+Could not find a connection between 'odom' and 'locobot/base_footprint'
+because they are not part of the same tree.
+```
+
+**Root Cause:**
+The Gazebo-ROS2 bridge was publishing odometry on `/odom` but not
+forwarding the corresponding TF transform to the ROS2 `/tf` topic.
+
+**Resolution:**
+Added `/model/locobot/tf` to the gz_bridge with a remapping to `/tf`,
+ensuring the `odom → locobot/base_footprint` transform reaches Nav2
+with correct simulation timestamps.
+
+---
+
+### Issue 2: Scan Frame Timestamp Mismatch
+
+**Observed Behavior:**
+Nav2 costmap continuously dropped scan messages:
+```
+Message Filter dropping message: frame 'camera_depth_frame'
+at time X for reason 'timestamp earlier than transform cache'
+```
+
+**Root Cause:**
+The `depthimage_to_laserscan` node published the LaserScan with a
+default frame `camera_depth_frame` which did not exist in the TF tree.
+
+**Resolution:**
+Set the `output_frame` parameter to `locobot/depth_camera_link` which
+is the actual TF frame of the depth camera in the robot URDF.
+
+---
+
+### Issue 3: Robot Spawning at Previous Position
+
+**Observed Behavior:**
+After restarting the simulation, the robot appeared at its last position
+from the previous run, causing odometry to start from a non-zero position
+and breaking Nav2's localization.
+
+**Root Cause:**
+Gazebo Harmonic caches the last known model state between runs.
+
+**Resolution:**
+Added the `-r` flag to `gz_sim` to auto-reset the world on launch,
+and added a 5-second `TimerAction` delay before robot spawn to ensure
+Gazebo fully initializes first.
+
+---
+
+### Issue 4: Robot Stuck Near Obstacles
+
+**Observed Behavior:**
+The robot stopped moving near clusters of obstacles even when a
+navigable path existed nearby. It would remain stuck for extended
+periods before the recovery behavior triggered.
+
+**Root Cause:**
+The Nav2 costmap inflation radius was set to 0.55 m, causing obstacles
+to appear artificially large and blocking all available paths through
+the cluttered environment.
+
+**Resolution:**
+Reduced inflation parameters in `nav2_params.yaml`:
+- `inflation_radius`: 0.55 m → 0.15 m
+- `robot_radius`: 0.22 m → 0.15 m
+
+This allowed the planner to find paths through the gaps between obstacles.
+
+---
 ---
 
 ## 5. Milestone Video
