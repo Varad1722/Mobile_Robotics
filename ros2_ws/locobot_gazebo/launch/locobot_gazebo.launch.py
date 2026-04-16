@@ -138,4 +138,13 @@ def generate_launch_description():
             arguments=['0', '0', '0', '0', '0', '0', 'map', 'odom'],
             output='screen',
         ),
+
+        Node(
+            package='rviz2',
+            executable='rviz2',
+            name='rviz2',
+            arguments=['-d', os.path.join(os.path.expanduser('~'), 'mobile_manipulation_ws', 'src', 'locobot_gazebo', 'config', 'locobot_nav.rviz')],
+            parameters=[{'use_sim_time': True}],
+            output='screen',
+        ),
     ])
