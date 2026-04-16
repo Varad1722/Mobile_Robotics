@@ -216,7 +216,7 @@ creating a realistic multi-beacon noise scenario.
 ---
  
 
- ### Assumptions
+ ### Assumptions  
  
 - Beacon positions are perfectly known (no anchor uncertainty)
 - Noise is independent and identically distributed (i.i.d.) across beacons
