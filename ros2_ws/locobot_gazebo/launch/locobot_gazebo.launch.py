@@ -71,7 +71,7 @@ def generate_launch_description():
                     arguments=[
                         '-name', 'locobot',
                         '-file', resolved_urdf_path,
-                        '-x', '-4.0', '-y', '-4.0', '-z', '0.15',
+                        '-x', '0.0', '-y', '-4.5', '-z', '0.15',
                     ],
                     output='screen',
                 ),
@@ -88,9 +88,7 @@ def generate_launch_description():
                 '/odom@nav_msgs/msg/Odometry[gz.msgs.Odometry',
                 '/model/locobot/tf@tf2_msgs/msg/TFMessage[gz.msgs.Pose_V',
             ],
-            remappings=[
-                ('/model/locobot/tf', '/tf'),
-            ],
+
             output='screen',
         ),
 
@@ -130,7 +128,25 @@ def generate_launch_description():
         ),
 
 
-# odom_tf_broadcaster removed - using gz bridge /model/locobot/tf
+        TimerAction(
+            period=8.0,
+            actions=[
+                Node(
+                    package='locobot_nodes',
+                    executable='arm_home',
+                    output='screen',
+                ),
+            ]
+        ),
+
+# gz_lidar_sim removed - using real depth camera
+
+        Node(
+            package='locobot_nodes',
+            executable='odom_tf_broadcaster',
+            output='screen',
+            parameters=[{'use_sim_time': True}],
+        ),
 
         Node(
             package='tf2_ros',
