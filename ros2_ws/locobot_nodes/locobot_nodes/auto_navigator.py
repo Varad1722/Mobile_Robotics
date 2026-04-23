@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 import rclpy
 from rclpy.node import Node
-from geometry_msgs.msg import PoseStamped
-from std_msgs.msg import String
+from geometry_msgs.msg import PoseStamped, Twist
+from std_msgs.msg import String, Bool
+from rclpy.qos import QoSProfile, ReliabilityPolicy, HistoryPolicy
 import math
 import rclpy.parameter
 
@@ -20,9 +21,13 @@ class AutoNavigator(Node):
 
         self.goal_pub = self.create_publisher(PoseStamped, "/goal_pose", 10)
         self.state_pub = self.create_publisher(String, "/robot_state", 10)
+        self.cmd_vel_pub = self.create_publisher(Twist, "/cmd_vel", 10)
 
         self.ball_sub = self.create_subscription(PoseStamped, "/ball_global_pose", self.ball_cb, 10)
         self.state_sub = self.create_subscription(String, "/robot_state", self.state_cb, 10)
+
+        qos = QoSProfile(reliability=ReliabilityPolicy.BEST_EFFORT, history=HistoryPolicy.KEEP_LAST, depth=1)
+        self.ball_detected_sub = self.create_subscription(Bool, "/ball_detected", self.ball_detected_cb, qos)
 
         self.robot_x = -4.0
         self.robot_y = -4.0
@@ -30,16 +35,14 @@ class AutoNavigator(Node):
         self.ball_y = None
         self.state = "IDLE"
         self.goal_sent = False
+        self.ball_visible = False
 
-        # Use Gazebo transport for accurate robot position
         if GZ_AVAILABLE:
             self.gz_node = GzNode()
             self.gz_node.subscribe(Pose_V, "/world/locobot_world/pose/info", self.pose_cb)
             self.get_logger().info("Using Gazebo transport for robot position")
-        else:
-            self.get_logger().warn("Gazebo transport not available")
 
-        self.timer = self.create_timer(1.0, self.update)
+        self.timer = self.create_timer(0.5, self.update)
         self.get_logger().info("Auto Navigator started")
 
     def pose_cb(self, msg):
@@ -51,7 +54,9 @@ class AutoNavigator(Node):
     def ball_cb(self, msg):
         self.ball_x = msg.pose.position.x
         self.ball_y = msg.pose.position.y
-        self.get_logger().info(f"Ball at ({self.ball_x:.2f}, {self.ball_y:.2f})")
+
+    def ball_detected_cb(self, msg):
+        self.ball_visible = msg.data
 
     def state_cb(self, msg):
         if msg.data != "NAVIGATING_TO_BALL":
@@ -61,6 +66,10 @@ class AutoNavigator(Node):
         if self.ball_x is None:
             return float("inf")
         return math.sqrt((self.robot_x - self.ball_x)**2 + (self.robot_y - self.ball_y)**2)
+
+    def stop_robot(self):
+        twist = Twist()
+        self.cmd_vel_pub.publish(twist)
 
     def send_goal(self, x, y):
         goal = PoseStamped()
@@ -81,15 +90,19 @@ class AutoNavigator(Node):
             self.state = "NAVIGATING_TO_BALL"
             state_msg.data = "NAVIGATING_TO_BALL"
             self.state_pub.publish(state_msg)
-            self.get_logger().info(f"Robot at ({self.robot_x:.2f}, {self.robot_y:.2f}), navigating to ball")
+            self.get_logger().info(f"Navigating to ball at ({self.ball_x:.2f}, {self.ball_y:.2f})")
 
         elif self.state == "NAVIGATING_TO_BALL":
             dist = self.distance_to_ball()
-            self.get_logger().info(f"Robot: ({self.robot_x:.2f}, {self.robot_y:.2f}) | Ball: ({self.ball_x:.2f}, {self.ball_y:.2f}) | Dist: {dist:.2f}m")
-            if dist < 0.8:
+            self.get_logger().info(f"Dist: {dist:.2f}m | Ball visible: {self.ball_visible}")
+
+            # Stop when ball is visible OR within 1.5m
+            if self.ball_visible or dist < 1.5:
+                self.stop_robot()  # Stop immediately
                 self.state = "AT_BALL"
                 state_msg.data = "AT_BALL"
                 self.state_pub.publish(state_msg)
+                self.get_logger().info(f"Ball found! Stopping. Dist:{dist:.2f}m Visible:{self.ball_visible}")
 
         elif self.state == "NAVIGATE_TO_TARGET":
             self.send_goal(0.0, 0.0)
@@ -99,8 +112,8 @@ class AutoNavigator(Node):
 
         elif self.state == "NAVIGATING_TO_TARGET":
             dist = math.sqrt(self.robot_x**2 + self.robot_y**2)
-            self.get_logger().info(f"Distance to target: {dist:.2f}m")
             if dist < 0.3:
+                self.stop_robot()
                 self.state = "AT_TARGET"
                 state_msg.data = "AT_TARGET"
                 self.state_pub.publish(state_msg)
