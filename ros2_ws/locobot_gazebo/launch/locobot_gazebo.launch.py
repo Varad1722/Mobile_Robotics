@@ -1,5 +1,13 @@
 import os
 import subprocess
+import random
+
+# Safe ball spawn positions (clear of obstacles)
+SAFE_POSITIONS = [
+    (3.0, 3.0), (3.0, -3.0), (-3.0, 3.0), (-3.0, -3.0),
+    (3.5, 0.0), (-3.5, 0.0), (0.0, 3.5), (0.0, -3.5),
+    (2.0, 3.5), (3.5, 2.0), (-2.0, 3.5), (3.5, -2.0),
+]
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import IncludeLaunchDescription, SetEnvironmentVariable, TimerAction
@@ -127,6 +135,24 @@ def generate_launch_description():
             output='screen',
         ),
 
+
+        TimerAction(
+            period=6.0,
+            actions=[
+                Node(
+                    package='ros_gz_sim',
+                    executable='create',
+                    arguments=[
+                        '-name', 'ball',
+                        '-file', os.path.join(desc_pkg, 'worlds', 'ball.sdf'),
+                        '-x', str((_pos := random.choice(SAFE_POSITIONS))[0]),
+                        '-y', str(_pos[1]),
+                        '-z', '0.1',
+                    ],
+                    output='screen',
+                ),
+            ]
+        ),
 
         TimerAction(
             period=8.0,
