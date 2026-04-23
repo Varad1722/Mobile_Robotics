@@ -71,13 +71,22 @@ class AutoNavigator(Node):
         twist = Twist()
         self.cmd_vel_pub.publish(twist)
 
-    def send_goal(self, x, y):
+    def send_goal(self, x, y, target_x=None, target_y=None):
+        import math
         goal = PoseStamped()
         goal.header.frame_id = "map"
         goal.header.stamp = self.get_clock().now().to_msg()
         goal.pose.position.x = x
         goal.pose.position.y = y
-        goal.pose.orientation.w = 1.0
+
+        # Face toward target if provided
+        if target_x is not None and target_y is not None:
+            angle = math.atan2(target_y - y, target_x - x)
+            goal.pose.orientation.z = math.sin(angle / 2.0)
+            goal.pose.orientation.w = math.cos(angle / 2.0)
+        else:
+            goal.pose.orientation.w = 1.0
+
         self.goal_pub.publish(goal)
         self.get_logger().info(f"Goal sent: ({x:.2f}, {y:.2f})")
 
@@ -85,7 +94,18 @@ class AutoNavigator(Node):
         state_msg = String()
 
         if self.state == "IDLE" and self.ball_x is not None and not self.goal_sent:
-            self.send_goal(self.ball_x, self.ball_y)
+            import math
+            # Stop 1m before ball, facing toward it
+            dx = self.ball_x - self.robot_x
+            dy = self.ball_y - self.robot_y
+            dist = math.sqrt(dx**2 + dy**2)
+            if dist > 1.0:
+                goal_x = self.ball_x - 1.0 * (dx / dist)
+                goal_y = self.ball_y - 1.0 * (dy / dist)
+            else:
+                goal_x = self.robot_x
+                goal_y = self.robot_y
+            self.send_goal(goal_x, goal_y, self.ball_x, self.ball_y)
             self.goal_sent = True
             self.state = "NAVIGATING_TO_BALL"
             state_msg.data = "NAVIGATING_TO_BALL"
@@ -96,8 +116,8 @@ class AutoNavigator(Node):
             dist = self.distance_to_ball()
             self.get_logger().info(f"Dist: {dist:.2f}m | Ball visible: {self.ball_visible}")
 
-            # Stop when ball is visible OR within 1.5m
-            if self.ball_visible or dist < 1.5:
+            # Stop when close enough (visible AND within 1.5m, OR within 0.8m)
+            if (self.ball_visible and dist < 1.5) or dist < 0.8:
                 self.stop_robot()  # Stop immediately
                 self.state = "AT_BALL"
                 state_msg.data = "AT_BALL"
