@@ -1,5 +1,13 @@
 import os
 import subprocess
+import random
+
+# Safe ball spawn positions (clear of obstacles)
+SAFE_POSITIONS = [
+    (3.0, 3.0), (3.0, -3.0), (-3.0, 3.0), (-3.0, -3.0),
+    (3.5, 0.0), (-3.5, 0.0), (0.0, 3.5), (0.0, -3.5),
+    (2.0, 3.5), (3.5, 2.0), (-2.0, 3.5), (3.5, -2.0),
+]
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
 from launch.actions import IncludeLaunchDescription, SetEnvironmentVariable, TimerAction
@@ -71,7 +79,7 @@ def generate_launch_description():
                     arguments=[
                         '-name', 'locobot',
                         '-file', resolved_urdf_path,
-                        '-x', '-4.0', '-y', '-4.0', '-z', '0.15',
+                        '-x', '0.0', '-y', '-4.5', '-z', '0.15',
                     ],
                     output='screen',
                 ),
@@ -88,9 +96,7 @@ def generate_launch_description():
                 '/odom@nav_msgs/msg/Odometry[gz.msgs.Odometry',
                 '/model/locobot/tf@tf2_msgs/msg/TFMessage[gz.msgs.Pose_V',
             ],
-            remappings=[
-                ('/model/locobot/tf', '/tf'),
-            ],
+
             output='screen',
         ),
 
@@ -130,12 +136,57 @@ def generate_launch_description():
         ),
 
 
-# odom_tf_broadcaster removed - using gz bridge /model/locobot/tf
+        TimerAction(
+            period=6.0,
+            actions=[
+                Node(
+                    package='ros_gz_sim',
+                    executable='create',
+                    arguments=[
+                        '-name', 'ball',
+                        '-file', os.path.join(desc_pkg, 'worlds', 'ball.sdf'),
+                        '-x', str((_pos := random.choice(SAFE_POSITIONS))[0]),
+                        '-y', str(_pos[1]),
+                        '-z', '0.1',
+                    ],
+                    output='screen',
+                ),
+            ]
+        ),
+
+        TimerAction(
+            period=8.0,
+            actions=[
+                Node(
+                    package='locobot_nodes',
+                    executable='arm_home',
+                    output='screen',
+                ),
+            ]
+        ),
+
+# gz_lidar_sim removed - using real depth camera
+
+        Node(
+            package='locobot_nodes',
+            executable='odom_tf_broadcaster',
+            output='screen',
+            parameters=[{'use_sim_time': True}],
+        ),
 
         Node(
             package='tf2_ros',
             executable='static_transform_publisher',
             arguments=['0', '0', '0', '0', '0', '0', 'map', 'odom'],
+            output='screen',
+        ),
+
+        Node(
+            package='rviz2',
+            executable='rviz2',
+            name='rviz2',
+            arguments=['-d', os.path.join(os.path.expanduser('~'), 'mobile_manipulation_ws', 'src', 'locobot_gazebo', 'config', 'locobot_nav.rviz')],
+            parameters=[{'use_sim_time': True}],
             output='screen',
         ),
     ])

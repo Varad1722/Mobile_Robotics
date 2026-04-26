@@ -27,6 +27,10 @@ setup(
             'beacon_localization = locobot_nodes.beacon_localization:main',
             'odom_tf_broadcaster = locobot_nodes.odom_tf_broadcaster:main',
             'gz_lidar_sim = locobot_nodes.gz_lidar_sim:main',
+            'auto_navigator = locobot_nodes.auto_navigator:main',
+            'arm_home = locobot_nodes.arm_home:main',
+            'ball_detection = locobot_nodes.ball_detection:main',
+            'base_alignment = locobot_nodes.base_alignment:main',
         ],
     },
 )
