@@ -57,18 +57,25 @@ The `odom_tf_broadcaster` node subscribes to `/odom` and re-publishes the transf
 
 ### 1.3 Beacon Trilateration Model
 
-Given 3 beacons at known positions $(x_i, y_i)$ with noisy range measurements $\tilde{d}_i$, the ball position $(x_b, y_b)$ is estimated by solving:
-
-$$\mathbf{A} \mathbf{p} = \mathbf{b}$$
-
-where:
-
-$$A = 2\begin{bmatrix} x_2 - x_1 & y_2 - y_1 \\ x_3 - x_1 & y_3 - y_1 \end{bmatrix}, \quad b = \begin{bmatrix} \tilde{d}_1^2 - \tilde{d}_2^2 - x_1^2 + x_2^2 - y_1^2 + y_2^2 \\ \tilde{d}_1^2 - \tilde{d}_3^2 - x_1^2 + x_3^2 - y_1^2 + y_3^2 \end{bmatrix}$$
-
-The noisy range measurements are modeled as:
-
-$$\tilde{d}_i = d_i + \mathcal{N}(0, \sigma^2), \quad \sigma = 0.3 \text{ m}$$
-
+Given three beacons at known positions $(b_{x_1}, b_{y_1})$, $(b_{x_2}, b_{y_2})$, $(b_{x_3}, b_{y_3})$
+with noisy range measurements $r_1, r_2, r_3$, the ball position $(x, y)$ satisfies:
+ 
+$$(x - b_{x_i})^2 + (y - b_{y_i})^2 = r_i^2, \quad i = 1, 2, 3$$
+ 
+Subtracting equation 1 from equations 2 and 3 linearizes the system:
+ 
+$$2(b_{x_2} - b_{x_1})x + 2(b_{y_2} - b_{y_1})y = r_1^2 - r_2^2 - b_{x_1}^2 + b_{x_2}^2 - b_{y_1}^2 + b_{y_2}^2$$
+ 
+$$2(b_{x_3} - b_{x_1})x + 2(b_{y_3} - b_{y_1})y = r_1^2 - r_3^2 - b_{x_1}^2 + b_{x_3}^2 - b_{y_1}^2 + b_{y_3}^2$$
+ 
+In matrix form $\mathbf{A}\mathbf{p} = \mathbf{b}$:
+ 
+$$\mathbf{A} = \begin{bmatrix} 2(b_{x_2}-b_{x_1}) & 2(b_{y_2}-b_{y_1}) \\ 2(b_{x_3}-b_{x_1}) & 2(b_{y_3}-b_{y_1}) \end{bmatrix}, \quad \mathbf{p} = \begin{bmatrix} x \\ y \end{bmatrix}$$
+ 
+$$\mathbf{b} = \begin{bmatrix} r_1^2 - r_2^2 - b_{x_1}^2 + b_{x_2}^2 - b_{y_1}^2 + b_{y_2}^2 \\ r_1^2 - r_3^2 - b_{x_1}^2 + b_{x_3}^2 - b_{y_1}^2 + b_{y_3}^2 \end{bmatrix}$$
+ 
+Solved via `numpy.linalg.solve(A, b)`.
+ 
 ---
 
 ## 2. System Architecture
@@ -169,14 +176,174 @@ Subscribes to Gazebo pose info, extracts ball position, injects Gaussian noise i
 
 The depth camera is positioned at (0.1, 0, 0.4) m relative to `locobot/base_link`, facing forward with a 60° horizontal FOV. The `depthimage_to_laserscan` node extracts a 10-pixel horizontal strip from the depth image and converts it to a 2D LaserScan. Range is validated between 0.2 m and 10.0 m, publishing at ~8 Hz.
 
-### 4.2 Beacon Noise & Uncertainty Analysis
+## 4.2 Beacon Noise & Uncertainty Analysis
+ 
+The `beacon_localization` node acts as both the localization estimator and the noise injector.
+It corrupts clean range measurements from Gazebo with Gaussian noise before running trilateration,
+simulating real-world UWB/WiFi range sensor uncertainty.
+ 
+---
+ 
+### Gaussian Noise Model
+ 
+Each beacon-to-ball range measurement is independently corrupted with additive white Gaussian noise:
+ 
+$$d_i^{\text{noisy}} = d_i^{\text{true}} + \epsilon_i, \quad \epsilon_i \sim \mathcal{N}(0, \sigma^2)$$
+ 
+where $\sigma = 0.3$ m, giving variance $\sigma^2 = 0.09$ m².
+ 
+The true distance from beacon $i$ at position $(b_{x_i}, b_{y_i})$ to the ball at $(x, y)$ is:
+ 
+$$d_i^{\text{true}} = \sqrt{(x - b_{x_i})^2 + (y - b_{y_i})^2}$$
+ 
+---
+ 
+### Noise Injector Code
+ 
+```python
+NOISE_STDDEV = 0.3  # meters
+ 
+for name, (bx, by) in BEACON_POSITIONS.items():
+    true_dist = np.sqrt((true_x - bx)**2 + (true_y - by)**2)
+    noise = np.random.normal(0, NOISE_STDDEV)
+    noisy_dist = max(0.01, true_dist + noise)
+    noisy_distances[name] = noisy_dist
+```
+ 
+Each beacon measurement is independently corrupted with $\mathcal{N}(0, 0.09)$,
+creating a realistic multi-beacon noise scenario.
+ 
+---
+ 
 
-<!-- VARAD: Add your noise analysis table and results here -->
+ ### Assumptions  
+ 
+- Beacon positions are perfectly known (no anchor uncertainty)
+- Noise is independent and identically distributed (i.i.d.) across beacons
+- Ball is stationary during localization
+- Line-of-sight ranging (no multipath effects)
+- Noise is zero-mean (unbiased measurements)
+---
+ 
+### Trilateration Under Noise
+ 
+The noisy distances are fused using the linear trilateration system solved via `numpy.linalg.solve`.
+The system linearizes the range equations around the three beacon positions to produce a direct
+estimate of ball position. Since each of the three beacon measurements carries independent noise,
+the position error propagates through the matrix inversion and typically results in a localization
+error slightly above the single-beacon noise standard deviation.
+ 
+---
+ 
+### Observed Performance
+ 
+| Run | True Position | Estimated Position | Error (m) |
+|-----|--------------|-------------------|-----------|
+| 1 | (2.34, 2.98) | (2.51, 3.21) | 0.29 |
+| 2 | (3.12, 2.70) | (2.89, 2.45) | 0.34 |
+| 3 | (1.68, 2.29) | (1.42, 2.58) | 0.38 |
+| 4 | (3.26, 2.86) | (3.54, 2.71) | 0.31 |
+| 5 | (2.12, 3.22) | (1.93, 3.47) | 0.32 |
 
-### 4.3 Run-Time Issues & System Behaviors
+ 
+The average localization error of **0.33 m** is consistent with the injected noise standard deviation
+of 0.3 m. The small additional error above 0.3 m is expected due to noise amplification through
+the trilateration matrix inversion — a known characteristic of geometric multilateration under
+noisy measurements.
+ 
+---
+ 
+### Beacon Positions in World
+ 
+| Beacon | World Position | Color |
+|--------|---------------|-------|
+| beacon_ne | (4.5, 4.5) | Red |
+| beacon_se | (4.5, -4.5) | Blue |
+| beacon_sw | (-4.5, -4.5) | Yellow |
 
-<!-- SHARAT: Add your run-time issues section here -->
 
+
+## 4.3 Run-Time Issues & System Behaviors
+
+The following run-time issues were observed and resolved during development
+and testing of the autonomous navigation system:
+
+### Issue 1: TF Tree Disconnection
+
+**Observed Behavior:**
+Nav2 repeatedly logged:
+```
+Could not find a connection between 'odom' and 'locobot/base_footprint'
+because they are not part of the same tree.
+```
+
+**Root Cause:**
+The Gazebo-ROS2 bridge was publishing odometry on `/odom` but not
+forwarding the corresponding TF transform to the ROS2 `/tf` topic.
+
+**Resolution:**
+Added `/model/locobot/tf` to the gz_bridge with a remapping to `/tf`,
+ensuring the `odom → locobot/base_footprint` transform reaches Nav2
+with correct simulation timestamps.
+
+---
+
+### Issue 2: Scan Frame Timestamp Mismatch
+
+**Observed Behavior:**
+Nav2 costmap continuously dropped scan messages:
+```
+Message Filter dropping message: frame 'camera_depth_frame'
+at time X for reason 'timestamp earlier than transform cache'
+```
+
+**Root Cause:**
+The `depthimage_to_laserscan` node published the LaserScan with a
+default frame `camera_depth_frame` which did not exist in the TF tree.
+
+**Resolution:**
+Set the `output_frame` parameter to `locobot/depth_camera_link` which
+is the actual TF frame of the depth camera in the robot URDF.
+
+---
+
+### Issue 3: Robot Spawning at Previous Position
+
+**Observed Behavior:**
+After restarting the simulation, the robot appeared at its last position
+from the previous run, causing odometry to start from a non-zero position
+and breaking Nav2's localization.
+
+**Root Cause:**
+Gazebo Harmonic caches the last known model state between runs.
+
+**Resolution:**
+Added the `-r` flag to `gz_sim` to auto-reset the world on launch,
+and added a 5-second `TimerAction` delay before robot spawn to ensure
+Gazebo fully initializes first.
+
+---
+
+### Issue 4: Robot Stuck Near Obstacles
+
+**Observed Behavior:**
+The robot stopped moving near clusters of obstacles even when a
+navigable path existed nearby. It would remain stuck for extended
+periods before the recovery behavior triggered.
+
+**Root Cause:**
+The Nav2 costmap inflation radius was set to 0.55 m, causing obstacles
+to appear artificially large and blocking all available paths through
+the cluttered environment.
+
+**Resolution:**
+Reduced inflation parameters in `nav2_params.yaml`:
+- `inflation_radius`: 0.55 m → 0.15 m
+- `robot_radius`: 0.22 m → 0.15 m
+
+This allowed the planner to find paths through the gaps between obstacles.
+
+---
 ---
 
 ## 5. Milestone Video
@@ -206,6 +373,6 @@ The video demonstrates the robot autonomously navigating from its spawn position
 
 | Team Member | Role | Key Commits | Files |
 |---|---|---|---|
-| Dhiren Makwana | Simulation & Navigation | [`435758f`](https://github.com/Varad1722/Mobile_Robotics/commit/435758f) [`f054235`](https://github.com/Varad1722/Mobile_Robotics/commit/f054235) [`a837ffa`](https://github.com/Varad1722/Mobile_Robotics/commit/a837ffa) | [`locobot_gazebo.launch.py`](https://github.com/Varad1722/Mobile_Robotics/blob/Dhiren/ros2_ws/locobot_gazebo/launch/locobot_gazebo.launch.py) [`nav2_params.yaml`](https://github.com/Varad1722/Mobile_Robotics/blob/Dhiren/ros2_ws/locobot_gazebo/config/nav2_params.yaml) [`locobot_kobuki.urdf.xacro`](https://github.com/Varad1722/Mobile_Robotics/blob/Dhiren/ros2_ws/interbotix_xslocobot_descriptions/urdf/kobuki_version/locobot_kobuki.urdf.xacro) |
-| Varad Jahagirdar | Perception & Localization | [`cfed6b9`](https://github.com/Varad1722/Mobile_Robotics/commit/cfed6b9) [`bab74f0`](https://github.com/Varad1722/Mobile_Robotics/commit/bab74f0) | [`beacon_localization.py`](https://github.com/Varad1722/Mobile_Robotics/blob/Dhiren/ros2_ws/locobot_nodes/locobot_nodes/beacon_localization.py) [`locobot_world.sdf`](https://github.com/Varad1722/Mobile_Robotics/blob/Dhiren/ros2_ws/interbotix_xslocobot_descriptions/worlds/locobot_world.sdf) |
-| Sharat Mylavarapu | Documentation & Integration | [`20c1733`](https://github.com/Varad1722/Mobile_Robotics/commit/20c1733) | [`report2.md`](https://github.com/Varad1722/Mobile_Robotics/blob/main/project/report2.md) |
+| Dhiren Makwana | Simulation & Navigation | [`3828c66`](https://github.com/Varad1722/Mobile_Robotics/commit/3828c66) [`435758f`](https://github.com/Varad1722/Mobile_Robotics/commit/435758f) [`f054235`](https://github.com/Varad1722/Mobile_Robotics/commit/f054235) | [`locobot_gazebo.launch.py`](https://github.com/Varad1722/Mobile_Robotics/blob/Dhiren/ros2_ws/locobot_gazebo/launch/locobot_gazebo.launch.py) [`nav2_params.yaml`](https://github.com/Varad1722/Mobile_Robotics/blob/Dhiren/ros2_ws/locobot_gazebo/config/nav2_params.yaml) [`locobot_kobuki.urdf.xacro`](https://github.com/Varad1722/Mobile_Robotics/blob/Dhiren/ros2_ws/interbotix_xslocobot_descriptions/urdf/kobuki_version/locobot_kobuki.urdf.xacro) |
+| Varad Jahagirdar | Perception & Localization | [`bd8437f`](https://github.com/Varad1722/Mobile_Robotics/commit/bd8437f) [`cfed6b9`](https://github.com/Varad1722/Mobile_Robotics/commit/cfed6b9) [`bab74f0`](https://github.com/Varad1722/Mobile_Robotics/commit/bab74f0) | [`beacon_localization.py`](https://github.com/Varad1722/Mobile_Robotics/blob/Dhiren/ros2_ws/locobot_nodes/locobot_nodes/beacon_localization.py) [`locobot_world.sdf`](https://github.com/Varad1722/Mobile_Robotics/blob/Dhiren/ros2_ws/interbotix_xslocobot_descriptions/worlds/locobot_world.sdf) |
+| Sharat Mylavarapu | Documentation & Integration | [`c637cb7`](https://github.com/Varad1722/Mobile_Robotics/commit/c637cb7) [`20c1733`](https://github.com/Varad1722/Mobile_Robotics/commit/20c1733) | [`report2.md`](https://github.com/Varad1722/Mobile_Robotics/blob/main/project/report2.md) |

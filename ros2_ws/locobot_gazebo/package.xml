@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>locobot_gazebo</name>
+  <version>0.0.0</version>
+  <description>Gazebo simulation for LoCoBot</description>
+  <maintainer email="dmakwan2@asu.edu">Dhiren</maintainer>
+  <license>BSD</license>
+  <buildtool_depend>ament_cmake</buildtool_depend>
+  <depend>interbotix_xslocobot_descriptions</depend>
+  <depend>ros_gz_sim</depend>
+  <depend>ros_gz_bridge</depend>
+  <depend>robot_state_publisher</depend>
+  <depend>joint_state_publisher</depend>
+  <depend>xacro</depend>
+  <export>
+    <build_type>ament_cmake</build_type>
+  </export>
+</package>

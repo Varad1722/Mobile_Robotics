@@ -390,47 +390,143 @@
   <!-- Plugins -->
 
   <gazebo>
-    <!-- Gazebo ROS Control -->
-    <plugin name="gazebo_ros_control" filename="libgazebo_ros_control.so">
-      <robotSimType>gazebo_ros_control/DefaultRobotHWSim</robotSimType>
-      <legacyModeNS>true</legacyModeNS>
+    <!-- Differential Drive - Gazebo Harmonic -->
+    <plugin filename="gz-sim-diff-drive-system"
+            name="gz::sim::systems::DiffDrive">
+      <left_joint>wheel_left_joint</left_joint>
+      <right_joint>wheel_right_joint</right_joint>
+      <wheel_separation>0.230</wheel_separation>
+      <wheel_radius>0.035</wheel_radius>
+      <odom_publish_frequency>30</odom_publish_frequency>
+      <topic>cmd_vel</topic>
+      <odom_topic>odom</odom_topic>
+      <frame_id>odom</frame_id>
+      <child_frame_id>locobot/base_footprint</child_frame_id>
     </plugin>
 
-    <!-- Differential Drive -->
-    <plugin filename="libgazebo_ros_diff_drive.so" name="differential_drive_controller">
-      <alwaysOn>true</alwaysOn>
-      <legacyMode>false</legacyMode>
-      <updateRate>30</updateRate>
-      <leftJoint>wheel_left_joint</leftJoint>
-      <rightJoint>wheel_right_joint</rightJoint>
-      <wheelSeparation>0.230</wheelSeparation>
-      <wheelDiameter>0.070</wheelDiameter>
-      <wheelTorque>1.0</wheelTorque>
-      <wheelAcceleration>0</wheelAcceleration>
-      <commandTopic>mobile_base/commands/velocity</commandTopic>
-      <odometryTopic>mobile_base/odom</odometryTopic>
-      <odometryFrame>$(arg robot_name)/odom</odometryFrame>
-      <robotBaseFrame>$(arg robot_name)/base_footprint</robotBaseFrame>
-      <publishWheelJointState>true</publishWheelJointState>
-      <rosDebugLevel>na</rosDebugLevel>
-      <publishWheelTF>false</publishWheelTF>
-      <publishOdomTF>true</publishOdomTF>
-      <odometrySource>world</odometrySource>
-      <publishTf>1</publishTf>
+    <!-- Joint State Publisher - Gazebo Harmonic -->
+    <plugin filename="gz-sim-joint-state-publisher-system"
+            name="gz::sim::systems::JointStatePublisher">
+      <topic>joint_states</topic>
     </plugin>
 
-    <!-- Ground truth pose -->
-    <plugin filename="libgazebo_ros_p3d.so" name="p3d_base_controller">
-      <alwaysOn>true</alwaysOn>
-      <updateRate>100.0</updateRate>
-      <bodyName>$(arg robot_name)/base_link</bodyName>
-      <topicName>mobile_base/absolute_position</topicName>
-      <gaussianNoise>0</gaussianNoise>
-      <frameName>map</frameName>
-      <xyzOffsets>0 0 0</xyzOffsets>
-      <rpyOffsets>0 0 0</rpyOffsets>
-      <!--<interface:position name="p3d_base_position"/>-->
+    <!-- IMU - Gazebo Harmonic -->
+    <plugin filename="gz-sim-imu-system"
+            name="gz::sim::systems::Imu">
+    </plugin>
+
+    <!-- Odometry Publisher - Gazebo Harmonic -->
+    <plugin filename="gz-sim-odometry-publisher-system"
+            name="gz::sim::systems::OdometryPublisher">
+      <odom_frame>odom</odom_frame>
+      <robot_base_frame>locobot/base_footprint</robot_base_frame>
+      <odom_publish_frequency>30</odom_publish_frequency>
+      <odom_topic>odom</odom_topic>
     </plugin>
   </gazebo>
 
+
+  <!-- Arm Joint Position Controllers - Gazebo Harmonic -->
+  <gazebo>
+    <plugin filename="gz-sim-joint-position-controller-system"
+            name="gz::sim::systems::JointPositionController">
+      <joint_name>waist</joint_name>
+      <p_gain>20</p_gain>
+      <i_gain>0.1</i_gain>
+      <d_gain>1.0</d_gain>
+      <i_max>1</i_max>
+      <i_min>-1</i_min>
+      <cmd_max>10</cmd_max>
+      <cmd_min>-10</cmd_min>
+      <target>0.0</target>
+    </plugin>
+
+    <plugin filename="gz-sim-joint-position-controller-system"
+            name="gz::sim::systems::JointPositionController">
+      <joint_name>shoulder</joint_name>
+      <p_gain>20</p_gain>
+      <i_gain>0.1</i_gain>
+      <d_gain>1.0</d_gain>
+      <i_max>1</i_max>
+      <i_min>-1</i_min>
+      <cmd_max>20</cmd_max>
+      <cmd_min>-20</cmd_min>
+      <target>0.5</target>
+    </plugin>
+
+    <plugin filename="gz-sim-joint-position-controller-system"
+            name="gz::sim::systems::JointPositionController">
+      <joint_name>elbow</joint_name>
+      <p_gain>20</p_gain>
+      <i_gain>0.1</i_gain>
+      <d_gain>1.0</d_gain>
+      <i_max>1</i_max>
+      <i_min>-1</i_min>
+      <cmd_max>15</cmd_max>
+      <cmd_min>-15</cmd_min>
+      <target>-1.0</target>
+    </plugin>
+
+    <plugin filename="gz-sim-joint-position-controller-system"
+            name="gz::sim::systems::JointPositionController">
+      <joint_name>forearm_roll</joint_name>
+      <p_gain>10</p_gain>
+      <i_gain>0.1</i_gain>
+      <d_gain>0.5</d_gain>
+      <i_max>1</i_max>
+      <i_min>-1</i_min>
+      <cmd_max>2</cmd_max>
+      <cmd_min>-2</cmd_min>
+      <target>0.0</target>
+    </plugin>
+
+    <plugin filename="gz-sim-joint-position-controller-system"
+            name="gz::sim::systems::JointPositionController">
+      <joint_name>wrist_angle</joint_name>
+      <p_gain>10</p_gain>
+      <i_gain>0.1</i_gain>
+      <d_gain>0.5</d_gain>
+      <i_max>1</i_max>
+      <i_min>-1</i_min>
+      <cmd_max>5</cmd_max>
+      <cmd_min>-5</cmd_min>
+      <target>0.5</target>
+    </plugin>
+
+    <plugin filename="gz-sim-joint-position-controller-system"
+            name="gz::sim::systems::JointPositionController">
+      <joint_name>wrist_rotate</joint_name>
+      <p_gain>10</p_gain>
+      <i_gain>0.1</i_gain>
+      <d_gain>0.5</d_gain>
+      <i_max>1</i_max>
+      <i_min>-1</i_min>
+      <cmd_max>1</cmd_max>
+      <cmd_min>-1</cmd_min>
+      <target>0.0</target>
+    </plugin>
+  </gazebo>
+
+
+  <link name="$(arg robot_name)/depth_camera_link">
+    <visual><geometry><box size="0.05 0.05 0.05"/></geometry></visual>
+    <inertial><mass value="0.1"/><inertia ixx="0.001" ixy="0" ixz="0" iyy="0.001" iyz="0" izz="0.001"/></inertial>
+  </link>
+  <joint name="depth_camera_joint" type="fixed">
+    <parent link="$(arg robot_name)/base_link"/>
+    <child link="$(arg robot_name)/depth_camera_link"/>
+    <origin xyz="0.1 0 0.4" rpy="0 0 0"/>
+  </joint>
+  <gazebo reference="$(arg robot_name)/depth_camera_link">
+    <sensor name="depth_camera" type="depth_camera">
+      <update_rate>10</update_rate>
+      <topic>/camera/depth</topic>
+      <gz_frame_id>$(arg robot_name)/depth_camera_link</gz_frame_id>
+      <camera>
+        <horizontal_fov>1.047</horizontal_fov>
+        <image><width>320</width><height>240</height></image>
+        <clip><near>0.1</near><far>10.0</far></clip>
+      </camera>
+    </sensor>
+  </gazebo>
 </robot>
