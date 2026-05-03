@@ -41,15 +41,10 @@ class BallDetection(Node):
 
         hsv = cv2.cvtColor(cv_image, cv2.COLOR_BGR2HSV)
 
-        # Red color has two ranges in HSV
-        lower_red1 = np.array([0, 100, 100])
-        upper_red1 = np.array([10, 255, 255])
-        lower_red2 = np.array([160, 100, 100])
-        upper_red2 = np.array([180, 255, 255])
-
-        mask1 = cv2.inRange(hsv, lower_red1, upper_red1)
-        mask2 = cv2.inRange(hsv, lower_red2, upper_red2)
-        mask = cv2.bitwise_or(mask1, mask2)
+        # Orange color HSV range
+        lower_orange = np.array([10, 150, 150])
+        upper_orange = np.array([25, 255, 255])
+        mask = cv2.inRange(hsv, lower_orange, upper_orange)
 
         # Remove noise
         kernel = np.ones((5, 5), np.uint8)

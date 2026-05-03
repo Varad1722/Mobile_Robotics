@@ -550,4 +550,34 @@
     </sensor>
   </gazebo>
 
+
+  <gazebo>
+    <plugin filename="gz-sim-joint-position-controller-system"
+            name="gz::sim::systems::JointPositionController">
+      <joint_name>pan</joint_name>
+      <p_gain>10</p_gain>
+      <i_gain>0.1</i_gain>
+      <d_gain>0.5</d_gain>
+      <i_max>1</i_max>
+      <i_min>-1</i_min>
+      <cmd_max>2</cmd_max>
+      <cmd_min>-2</cmd_min>
+      <target>0.0</target>
+    </plugin>
+  </gazebo>
+
+  <gazebo>
+    <plugin filename="gz-sim-joint-position-controller-system"
+            name="gz::sim::systems::JointPositionController">
+      <joint_name>tilt</joint_name>
+      <p_gain>10</p_gain>
+      <i_gain>0.1</i_gain>
+      <d_gain>0.5</d_gain>
+      <i_max>1</i_max>
+      <i_min>-1</i_min>
+      <cmd_max>2</cmd_max>
+      <cmd_min>-2</cmd_min>
+      <target>0.0</target>
+    </plugin>
+  </gazebo>
 </robot>
