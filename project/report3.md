@@ -227,6 +227,300 @@ The ball detection system relies on a specific magenta HSV color range. This cre
 ---
 
 
+## 7. Sharat Mylavarapu Contribution
+{: .no_toc }
+
+**Module:** Arm Controller, End Effector Logging, RViz Debugging
+
+---
+
+<details open markdown="block">
+  <summary>Table of Contents</summary>
+  {: .text-delta }
+- TOC
+{:toc}
+</details>
+
+---
+
+## 7.1. Overview
+
+Sharat Mylavarapu's contribution to Milestone 3 covers the complete arm controller pipeline for the Locobot wx250s in Gazebo simulation. The work includes a Forward Kinematics (FK) based arm throw controller, an end effector logging node for debugging and calibration, and a GUI-to-Gazebo joint state bridge. Together these nodes enable the robot to autonomously pick up a ball and throw it toward a target.
+
+**Commit:** [`8244a94`](https://github.com/Varad1722/Mobile_Robotics/commit/8244a947a0355086fd8fef7d9e8f34bc79a5ccc9)
+
+---
+
+## 7.2. Arm Throw Controller
+
+### 7.2.1 Overview
+
+The `arm_throw_node.py` implements the complete pick-and-throw sequence for the wx250s arm. It spawns a ball at a known reachable position, moves the arm to the pickup pose using hardcoded joint angles derived from a physical calibration experiment, closes the gripper, lifts the arm, winds back, and executes a fast throw.
+
+**Source:** `ros2_ws/locobot_nodes/locobot_nodes/arm_throw_node.py`
+
+### 7.2.2 wx250s Forward Kinematics
+
+All joint angle computation is grounded in the exact wx250s URDF geometry. The full TF chain from `base_footprint` to the gripper tip:
+
+| Joint | Parent Link | X Offset (m) | Z Offset (m) | Type |
+|-------|-------------|--------------|--------------|------|
+| base_joint | base_footprint | 0 | 0.0102 | fixed |
+| plate | base_link | 0 | 0.08823 | fixed |
+| arm_base | plate_link | 0.097277 | 0.0095 | fixed |
+| waist | arm_base_link | 0 | 0.066175 | revolute (Z) |
+| shoulder (q1) | shoulder_link | 0 | 0.03865 | revolute (Y) |
+| elbow (q2) | upper_arm_link | 0.04975 | 0.25 | revolute (Y) |
+| forearm_roll | upper_forearm_link | 0.175 | 0 | revolute (X) |
+| wrist_angle (q3) | lower_forearm_link | 0.075 | 0 | revolute (Y) |
+| wrist_rotate | wrist_link | 0.065 | 0 | revolute (X) |
+| ee_arm | gripper_link | 0.043 | 0 | fixed |
+| ee_bar | gripper_bar_link | 0.023 | 0 | fixed |
+| ee_gripper | fingers_link | 0.027575 | 0 | fixed |
+
+Shoulder joint height from `base_footprint`:
+
+```
+SHOULDER_Z = 0.0102 + 0.08823 + 0.0095 + 0.066175 + 0.03865 = 0.212555 m
+```
+
+Link lengths used in FK:
+
+| Parameter | Value (m) | Source |
+|-----------|-----------|--------|
+| UPPER_ARM_X | 0.04975 | elbow joint x offset |
+| UPPER_ARM_Z | 0.25 | elbow joint z offset |
+| FOREARM_LEN | 0.25 (0.175 + 0.075) | forearm_roll + wrist_angle origins |
+| WRIST_TO_TIP | 0.158575 | wrist_rotate + ee_arm + ee_bar + ee_gripper |
+| SHOULDER_X | 0.097277 | arm_base_link x offset from plate |
+| SHOULDER_Z | 0.212555 | full chain sum from base_footprint |
+
+FK equations in the sagittal plane (X forward, Z up), origin at shoulder joint:
+
+```python
+x_elbow = UPPER_ARM_X * cos(q1) - UPPER_ARM_Z * sin(q1)
+z_elbow = UPPER_ARM_X * sin(q1) + UPPER_ARM_Z * cos(q1)
+
+x_wrist = x_elbow + FOREARM_LEN * cos(q1 + q2)
+z_wrist = z_elbow + FOREARM_LEN * sin(q1 + q2)
+
+x_grip  = x_wrist + WRIST_TO_TIP * cos(q1 + q2 + q3)
+z_grip  = z_wrist + WRIST_TO_TIP * sin(q1 + q2 + q3)
+```
+
+### 7.2.3 Calibrated Pickup Angles
+
+Pickup joint angles were determined experimentally using `joint_state_publisher_gui` sliders with the `ee_logger` node running in parallel. The arm was jogged to the ball position visually in Gazebo and the exact angles were recorded:
+
+| Joint | Angle (rad) | Angle (deg) | Method |
+|-------|-------------|-------------|--------|
+| shoulder (q1) | 0.6704 | 38.4° | GUI calibration |
+| elbow (q2) | -0.0007 | ~0° | GUI calibration |
+| wrist (q3) | -0.0001 | ~0° | GUI calibration |
+
+End effector position at these angles (from `ee_logger` output):
+
+| Position | Value | Frame |
+|----------|-------|-------|
+| X (forward) | 0.3013 m | base_footprint |
+| Y (lateral) | 0.0000 m | base_footprint |
+| Z (height) | 0.6932 m | base_footprint |
+| Gripper x (rel shoulder) | +0.2040 m | shoulder joint |
+| Gripper z (rel shoulder) | +0.4804 m | shoulder joint |
+| Reach from shoulder | 0.5219 m | shoulder joint |
+
+The ball is spawned at exactly `X=0.3013, Z=0.6932` from `base_footprint` so the gripper is already at the ball when the arm reaches the pickup pose.
+
+### 7.2.4 Throw Physics
+
+The elbow angle during the throw is computed from target distance using a linear mapping:
+
+```python
+t = (distance - THROW_DIST_MIN) / (THROW_DIST_MAX - THROW_DIST_MIN)
+throw_elbow = THROW_ELBOW_MIN + t * (THROW_ELBOW_MAX - THROW_ELBOW_MIN)
+
+# THROW_ELBOW_MIN = -1.8 rad
+# THROW_ELBOW_MAX = -0.3 rad
+# Default target = 3.5 m → elbow = -0.80 rad (-45.8°)
+```
+
+Throw parameters:
+
+| Parameter | Value | Description |
+|-----------|-------|-------------|
+| SHOULDER_WINDUP | -1.2 rad | Arm pulled back for wind-up |
+| SHOULDER_THROW | 1.5 rad | Arm swept forward for release |
+| wind_back_time | 2.0 s | Hold wind-back position |
+| throw_speed_time | 0.4 s | Time after throw before home |
+| Gripper release | 0.15 s after throw cmd | Open at peak arm velocity |
+| Default target | 3.5 m | Maps to elbow = -0.80 rad |
+
+### 7.2.5 Complete Sequence
+
+| Step | Action | Duration |
+|------|--------|----------|
+| 1 | Wait for Gazebo to settle | 2.0 s |
+| 2 | Spawn ball at exact EE position + publish RViz marker | 0.5 s |
+| 3 | Countdown wait | 5.0 s |
+| 4 | Open gripper slowly (0.015 → 0.037 m) | 1.0 s |
+| 5 | Move arm to pickup pose q1=0.6704, q2=0, q3=0 (30 interpolated steps) | 4.0 s |
+| 6 | Close gripper tight (0.037 → 0.016 m) | 2.0 s |
+| 7 | Lift arm to home position (slow) | 2.5 s |
+| 8 | Wind-back shoulder to -1.2 rad | 2.0 s |
+| 9 | THROW — shoulder sweeps to 1.5 rad | 0.15 s |
+| 10 | Open gripper — release ball | 0.4 s |
+| 11 | Return arm to home | instant |
+
+Slow arm movements use linear interpolation over 30 steps:
+
+```python
+for i in range(1, steps+1):
+    t = i / steps
+    q1_cmd = cur_q1 + t * (target_q1 - cur_q1)
+    q2_cmd = cur_q2 + t * (target_q2 - cur_q2)
+    q3_cmd = cur_q3 + t * (target_q3 - cur_q3)
+```
+
+### 7.2.6 RViz Ball Marker
+
+The `arm_throw_node` publishes a red sphere marker to `/visualization_marker_array` at the ball spawn position for real-time visualization and debugging in RViz2. The marker refreshes every 2 seconds to stay visible throughout the full sequence.
+
+| Marker | Type | Color | Topic |
+|--------|------|-------|-------|
+| Ball sphere | SPHERE (r=0.02m) | Red (1.0, 0.2, 0.2) | /visualization_marker_array |
+| Ball label | TEXT_VIEW_FACING | White | /visualization_marker_array |
+
+---
+
+## 7.3. End Effector Logger
+
+### 7.3.1 Overview
+
+The `ee_logger` node subscribes to `/joint_states` and continuously computes the end effector world position using the wx250s FK equations. It logs joint angles, intermediate link positions, and the gripper tip position whenever any joint changes by more than a configurable threshold (default 0.01 rad).
+
+**Source:** `ros2_ws/locobot_nodes/locobot_nodes/ee_logger.py`
+
+### 7.3.2 Purpose
+
+This node was created specifically to support the arm calibration workflow. By running `ee_logger` alongside `joint_state_publisher_gui`, the engineer can move arm sliders visually in Gazebo and immediately read off exact EE coordinates — including copy-paste ready joint angle constants for `arm_throw_node.py`.
+
+### 7.3.3 Sample Output
+
+```
+──────────────────────────────────────────────────────────────────
+JOINT ANGLES:
+  shoulder(q1) = +0.6704 rad  (+38.4°)
+  elbow(q2)    = -0.0007 rad  (-0.0°)
+  wrist(q3)    = -0.0001 rad  (-0.0°)
+
+FK POSITIONS (relative to shoulder):
+  elbow:   x=-0.1163m  z=+0.2268m
+  wrist:   x=+0.0797m  z=+0.3820m
+  gripper: x=+0.2040m  z=+0.4804m
+  reach from shoulder: 0.5219m
+
+END EFFECTOR (from base_footprint, robot at origin):
+  X = +0.3013 m  (forward)
+  Y = +0.0000 m  (lateral)
+  Z = +0.6932 m  (height)
+
+COPY-PASTE FOR arm_throw_node.py:
+  pick_q1 = 0.6704  # shoulder 38.4°
+  pick_q2 = -0.0007  # elbow   ~0°
+  pick_q3 = -0.0001  # wrist   ~0°
+──────────────────────────────────────────────────────────────────
+```
+
+### 7.3.4 Joint Name Handling
+
+The node handles both namespaced (`locobot/shoulder`) and plain (`shoulder`) joint names from the `JointState` message, making it compatible with both `joint_state_publisher_gui` and Gazebo bridge outputs.
+
+---
+
+## 7.4. Joint State to Gazebo Bridge
+
+### 7.4.1 Overview
+
+The `joint_state_to_gz` node bridges ROS2 `/joint_states` messages from `joint_state_publisher_gui` to Gazebo's gz transport joint position controller topics. This allows the GUI sliders to directly drive the arm joints in the Gazebo simulation.
+
+**Source:** `ros2_ws/locobot_nodes/locobot_nodes/joint_state_to_gz.py`
+
+### 7.4.2 Topic Mapping
+
+| ROS Joint Name | Gazebo gz Transport Topic |
+|----------------|---------------------------|
+| waist | /model/locobot/joint/waist/0/cmd_pos |
+| shoulder | /model/locobot/joint/shoulder/0/cmd_pos |
+| elbow | /model/locobot/joint/elbow/0/cmd_pos |
+| forearm_roll | /model/locobot/joint/forearm_roll/0/cmd_pos |
+| wrist_angle | /model/locobot/joint/wrist_angle/0/cmd_pos |
+| wrist_rotate | /model/locobot/joint/wrist_rotate/0/cmd_pos |
+| left_finger | /model/locobot/joint/left_finger/0/cmd_pos |
+| right_finger | /model/locobot/joint/right_finger/0/cmd_pos |
+
+The node strips the `locobot/` namespace prefix from joint names before lookup, making it compatible with both namespaced and plain joint name formats.
+
+---
+
+## 7.5. Launch File Integration
+
+### 7.5.1 locobot_gazebo.launch.py
+
+The main Gazebo launch file was updated to include `joint_state_publisher_gui` and `joint_state_to_gz`. Both start with a 10-second `TimerAction` delay to allow the robot to fully spawn before the GUI connects.
+
+| Node | Delay | Purpose |
+|------|-------|---------|
+| robot_state_publisher | none | Publishes /robot_description and TF |
+| ros_gz_sim (Gazebo) | none | Simulation environment |
+| ros_gz_sim create | 5s | Spawns robot at (-4, -4, 0.15) |
+| ros_gz_bridge | none | Bridges clock, cmd_vel, odom, tf |
+| rviz2 | none | Visualization |
+| joint_state_publisher_gui | 10s | Slider GUI for manual arm control |
+| joint_state_to_gz | 10s | Bridges GUI sliders to Gazebo joints |
+
+### 7.5.2 Calibration Workflow
+
+1. Launch Gazebo: `ros2 launch locobot_gazebo locobot_gazebo.launch.py`
+2. Run EE logger: `ros2 run locobot_nodes ee_logger`
+3. Move GUI sliders to desired arm position — arm moves in Gazebo
+4. Read `COPY-PASTE` block from `ee_logger` terminal
+5. Paste `pick_q1/q2/q3` and ball position into `arm_throw_node.py`
+
+---
+
+## 7.6. Individual Contribution Summary
+
+| File | Role |
+|------|------|
+| `arm_throw_node.py` | FK-based arm controller: ball spawn, slow pickup, throw sequence, RViz marker |
+| `ee_logger.py` | FK end effector logger: joint angle monitoring, copy-paste calibration output |
+| `joint_state_to_gz.py` | GUI-to-Gazebo bridge: forwards joint_state_publisher_gui to gz transport |
+| `locobot_gazebo.launch.py` | Updated launch: added GUI + bridge with 10s delay |
+
+| Commit | Description |
+|--------|-------------|
+| [`8244a94`](https://github.com/Varad1722/Mobile_Robotics/commit/8244a947a0355086fd8fef7d9e8f34bc79a5ccc9) | Add arm_throw_node.py, ee_logger.py, joint_state_to_gz.py |
+
+---
+
+## 7. Status
+
+| Item | Status | Notes |
+|------|--------|-------|
+| FK equations (wx250s) | ✅ Complete | Exact URDF geometry used |
+| Ball spawn at EE position | ✅ Complete | X=0.3013m, Z=0.6932m |
+| Calibrated pickup angles | ✅ Complete | q1=0.6704, q2=-0.0007, q3=-0.0001 |
+| Slow arm interpolation | ✅ Complete | 30 steps over 4 seconds |
+| Gripper control | ✅ Complete | 0.037m open, 0.016m tight grip |
+| Throw sequence | ✅ Complete | Wind-back + fast sweep + release |
+| EE logger node | ✅ Complete | Logs on any joint change >0.01 rad |
+| GUI-to-Gazebo bridge | ✅ Complete | All 8 joints bridged |
+| RViz ball marker | ✅ Complete | Refreshes every 2s |
+| End-to-end pick+throw | 🔄 In Progress | Pending physical ball collision tuning |
+
+
+
+
 
 ## 7. Individual Contribution
 
