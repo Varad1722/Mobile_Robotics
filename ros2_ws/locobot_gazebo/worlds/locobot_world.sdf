@@ -62,7 +62,7 @@
 
     <!-- Ball for retrieval task -->
     <model name="ball">
-      <pose>2 0 0.1 0 0 0</pose>
+      <pose>2 0 0.03 0 0 0</pose>
       <link name="ball_link">
         <inertial>
           <mass>0.1</mass>
@@ -74,12 +74,12 @@
         </inertial>
         <collision name="collision">
           <geometry>
-            <sphere><radius>0.1</radius></sphere>
+            <sphere><radius>0.03</radius></sphere>
           </geometry>
         </collision>
         <visual name="visual">
           <geometry>
-            <sphere><radius>0.1</radius></sphere>
+            <sphere><radius>0.03</radius></sphere>
           </geometry>
           <material>
             <ambient>1 0 0 1</ambient>

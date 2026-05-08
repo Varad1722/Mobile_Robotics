@@ -31,6 +31,7 @@ setup(
             'arm_home = locobot_nodes.arm_home:main',
             'ball_detection = locobot_nodes.ball_detection:main',
             'base_alignment = locobot_nodes.base_alignment:main',
+            'arm_grasp = locobot_nodes.arm_grasp:main',
         ],
     },
 )

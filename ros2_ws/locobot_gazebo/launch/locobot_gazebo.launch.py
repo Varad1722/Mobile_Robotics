@@ -4,9 +4,8 @@ import random
 
 # Safe ball spawn positions (clear of obstacles)
 SAFE_POSITIONS = [
-    (3.0, 3.0), (3.0, -3.0), (-3.0, 3.0), (-3.0, -3.0),
-    (3.5, 0.0), (-3.5, 0.0), (0.0, 3.5), (0.0, -3.5),
-    (2.0, 3.5), (3.5, 2.0), (-2.0, 3.5), (3.5, -2.0),
+    (3.5, 3.5), (3.5, -3.5), (-3.5, 3.5), (-3.5, -3.5),
+    (1.5, 3.5), (-1.5, 3.5), (1.5, -3.5), (-1.5, -3.5),
 ]
 from ament_index_python.packages import get_package_share_directory
 from launch import LaunchDescription
@@ -111,6 +110,7 @@ def generate_launch_description():
             arguments=[
                 '/camera/depth@sensor_msgs/msg/Image[gz.msgs.Image',
                 '/camera/camera_info@sensor_msgs/msg/CameraInfo[gz.msgs.CameraInfo',
+                '/camera/color@sensor_msgs/msg/Image[gz.msgs.Image',
             ],
             output='screen',
         ),
@@ -147,7 +147,7 @@ def generate_launch_description():
                         '-file', os.path.join(desc_pkg, 'worlds', 'ball.sdf'),
                         '-x', str((_pos := random.choice(SAFE_POSITIONS))[0]),
                         '-y', str(_pos[1]),
-                        '-z', '0.1',
+                        '-z', '0.03',
                     ],
                     output='screen',
                 ),
