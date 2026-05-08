@@ -386,7 +386,7 @@ The ball detection system relies on a specific magenta HSV color range. This cre
 
 ## 7.1. Overview
 
-Sharat Mylavarapu's contribution to Milestone 3 covers the complete arm controller pipeline for the Locobot wx250s in Gazebo simulation. The work includes a Forward Kinematics (FK) based arm throw controller, an end effector logging node for debugging and calibration, and a GUI-to-Gazebo joint state bridge. Together these nodes enable the robot to autonomously pick up a ball and throw it toward a target.
+This covers the complete arm controller pipeline for the Locobot wx250s in Gazebo simulation. The work includes a Forward Kinematics (FK) based arm throw controller, an end effector logging node for debugging and calibration, and a GUI-to-Gazebo joint state bridge. Together these nodes enable the robot to autonomously pick up a ball and throw it toward a target.
 
 **Commit:** [`8244a94`](https://github.com/Varad1722/Mobile_Robotics/commit/8244a947a0355086fd8fef7d9e8f34bc79a5ccc9)
 
