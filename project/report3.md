@@ -199,7 +199,41 @@ Joints controlled: `waist`, `shoulder`, `elbow`, `forearm_roll`, `wrist_angle`, 
 
 ### 2.6 Throw Controller — Sharat Mylavarapu
 
-<!-- SHARAT: Paste your throw controller algorithm and physics equations here -->
+## 2.6.1. Throw Controller
+
+### 1.1 Overview
+
+The `arm_throw_node` activates after the robot has navigated to the ball position. It spawns the ball at a precomputed reachable position, performs a slow calibrated pickup, and executes a fast throw sequence toward the target.
+
+**Source:** `ros2_ws/locobot_nodes/locobot_nodes/arm_throw_node.py`
+
+### 2.6.1.2 Throw Sequence
+
+```
+Ball spawns at EE position (X=0.3013m, Z=0.6932m from base_footprint)
+    → Wait 5 seconds
+    → Open gripper (0.037m)
+    → Move arm to pickup pose (q1=0.6704, q2=0, q3=0) — slow, 30 steps over 4s
+    → Close gripper tight (0.016m)
+    → Lift arm to home
+    → Wind-back shoulder to -1.2 rad
+    → Throw — shoulder sweeps to 1.5 rad
+    → Open gripper at peak velocity — ball released
+    → Return arm to home
+```
+
+### 2.6.1.3 Throw Distance Mapping
+
+The elbow angle during the throw is mapped linearly from target distance:
+
+$$\theta_{\text{elbow}} = -1.8 + \frac{d - 0.5}{4.5} \times 1.5 \quad \text{(rad)}$$
+
+where $d$ is the target distance in meters. At the default target of 3.5 m, the elbow angle is $-0.80$ rad ($-45.8°$).
+
+### 2.6.1.4 Status
+
+Throw controller implementation is complete. Pickup angles were calibrated using `joint_state_publisher_gui` and `ee_logger` to find the exact joint configuration that places the gripper at the ball position. End-to-end validation with physical ball collision is in progress.
+
 
 ---
 
