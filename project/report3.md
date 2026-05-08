@@ -42,7 +42,16 @@ The system runs a single shared `/robot_state` topic as a finite state machine. 
 
 ### 2.2 Beacon Trilateration — Varad Jahagirdar
 
-<!-- VARAD: Paste your beacon localization algorithm section here -->
+Beacon Localization
+
+Already fully documented in Milestone 2. The node continues to operate identically in M3.
+
+**Source:** [`beacon_localization.py`](https://github.com/Varad1722/Mobile_Robotics/blob/Dhiren/ros2_ws/locobot_nodes/locobot_nodes/beacon_localization.py)
+
+Performance across 10 M3 trials: mean error **0.318 m**, consistent with $\sigma = 0.3$ m injected noise.
+
+---
+
 
 ### 2.3 Base Alignment Controller — Dhiren Makwana
 
@@ -82,7 +91,111 @@ Published to `/ball_camera_pos` as a `PointStamped` in the camera frame.
 
 ### 2.5 Arm Grasp & Geometric Inverse Kinematics — Varad Jahagirdar
 
-<!-- VARAD: Paste your arm grasp algorithm and IK equations here -->
+The `arm_grasp` node activates when `/robot_state` receives `ALIGNED`. It tilts the camera down to observe the ball at close range, computes arm joint angles using geometric inverse kinematics, and executes a pre-grasp → grasp → lift sequence.
+
+**Source:** [`arm_grasp.py`](https://github.com/Varad1722/Mobile_Robotics/blob/Dhiren/ros2_ws/locobot_nodes/locobot_nodes/arm_grasp.py)
+
+#### Grasp Sequence
+
+```
+ALIGNED received
+    → tilt camera down (0.75 rad)
+    → wait 2s for camera to stabilize
+    → get ball 3D position (camera depth or Gazebo GT fallback)
+    → compute geometric IK
+    → open gripper (0.037 m)
+    → rotate waist to face ball
+    → move to pre-grasp (5cm above ball)
+    → lower to grasp position
+    → close gripper (0.015 m)
+    → lift to pre-grasp height
+    → return to arm home pose
+    → publish GRASPED
+```
+
+#### Ball Position in Arm Frame
+
+**From camera (primary):**
+
+The depth camera is tilted down by $\alpha = 0.75$ rad. The ball position in camera frame $(x_c, y_c, z_c)$ — obtained from the depth unprojection in `ball_detection.py` — is rotated into arm base frame via a Y-axis rotation:
+
+$$x_{\text{arm}} = x_{\text{cam,offset}} + z_c \cos\alpha - y_c \sin\alpha$$
+
+$$y_{\text{arm}} = x_c$$
+
+$$z_{\text{arm}} = z_{\text{cam,offset}} - z_c \sin\alpha - y_c \cos\alpha$$
+
+Camera offset from arm base link (verified via TF at tilt=0): $x_{\text{cam,offset}} = 0.003$ m, $z_{\text{cam,offset}} = 0.302$ m.
+
+**From Gazebo GT (fallback):**
+
+If camera depth is unavailable, ball position is computed from live Gazebo ground truth poses. The world-frame vector from robot to ball is rotated into the robot local frame using the live yaw $\psi$, then converted to shoulder frame:
+
+$$x_{\text{arm}} = (b_x - r_x)\cos(-\psi) - (b_y - r_y)\sin(-\psi) - d_{\text{arm}}$$
+
+$$y_{\text{arm}} = (b_x - r_x)\sin(-\psi) + (b_y - r_y)\cos(-\psi)$$
+
+$$z_{\text{arm}} = b_z - (h_{\text{base}} + h_{\text{shoulder}})$$
+
+where $\psi$ is robot yaw, $d_{\text{arm}} = 0.140$ m (arm base forward offset from robot center), $h_{\text{base}} = 0.108$ m, $h_{\text{shoulder}} = 0.354825$ m.
+
+#### Geometric Inverse Kinematics
+
+The WidowX 250s arm is treated as a 2-link planar manipulator in the sagittal plane (x-z). All link lengths are derived directly from the URDF:
+
+$$L_1 = \sqrt{0.04975^2 + 0.25^2} = 0.2549\ \text{m} \quad \text{(shoulder to elbow)}$$
+
+$$L_2 = 0.175 + 0.075 = 0.250\ \text{m} \quad \text{(elbow to wrist)}$$
+
+$$L_3 = 0.065 + 0.043 + 0.023 + 0.027575 = 0.1586\ \text{m} \quad \text{(wrist to gripper tip)}$$
+
+**Wrist target** — subtract gripper length from horizontal reach so IK targets the wrist, not the tip:
+
+$$w_x = x_{\text{arm}} - L_3, \qquad w_z = -z_{\text{arm}}$$
+
+**Reach distance:**
+
+$$d = \sqrt{w_x^2 + w_z^2}, \qquad d \leq L_1 + L_2$$
+
+**Elbow angle** via law of cosines:
+
+$$\theta_{\text{elbow}} = \cos^{-1}\!\left(\frac{d^2 - L_1^2 - L_2^2}{2 L_1 L_2}\right)$$
+
+**Shoulder angle** — angle to wrist target minus correction for elbow bend:
+
+$$\alpha = \text{atan2}(w_z,\ w_x)$$
+
+$$\beta = \cos^{-1}\!\left(\frac{d^2 + L_1^2 - L_2^2}{2\, d\, L_1}\right)$$
+
+$$\theta_{\text{shoulder}} = \alpha - \beta$$
+
+**Wrist compensation** — keeps gripper roughly horizontal throughout motion:
+
+$$\theta_{\text{wrist}} = -(\theta_{\text{shoulder}} + \theta_{\text{elbow}})$$
+
+**Waist angle** — horizontal rotation to align arm plane with ball:
+
+$$\theta_{\text{waist}} = \text{atan2}(y_{\text{arm}},\ x_{\text{arm}}), \qquad \theta_{\text{waist}} \in \left[-\frac{\pi}{2},\ \frac{\pi}{2}\right]$$
+
+#### Pre-Grasp Strategy
+
+To avoid pushing the ball on approach, the arm first moves to a pre-grasp position 5 cm above the ball, then lowers straight down:
+
+$$z_{\text{pre}} = z_{\text{arm}} + 0.05\ \text{m}$$
+
+IK is solved independently for both the pre-grasp and grasp positions. The arm moves elbow → wrist → shoulder in that order to keep the center of mass balanced and prevent the robot from tipping.
+
+#### Joint Control
+
+All joints are commanded directly via Gazebo transport using subprocess calls — bypassing the ROS layer entirely for lower latency:
+
+```python
+topic = f"/model/locobot/joint/{joint}/0/cmd_pos"
+cmd = ["gz", "topic", "-t", topic, "-m", "gz.msgs.Double", "-p", f"data: {angle}"]
+subprocess.run(cmd, capture_output=True)
+```
+
+Joints controlled: `waist`, `shoulder`, `elbow`, `forearm_roll`, `wrist_angle`, `wrist_rotate`, `left_finger`, `tilt`.
 
 ### 2.6 Throw Controller — Sharat Mylavarapu
 
@@ -180,7 +293,35 @@ After the robot declares ALIGNED, residual angular and distance errors were meas
 
 ### 4.4 Grasp Performance Analysis — Varad Jahagirdar
 
-<!-- VARAD: Paste your grasp performance analysis here -->
+#### Overview
+
+The `arm_grasp` node activates when the `/robot_state` topic receives `ALIGNED`. It tilts the camera down to see the ball at close range, computes arm joint angles using geometric inverse kinematics, and executes a pre-grasp → grasp → lift sequence.
+
+**Source:** [`arm_grasp.py`](https://github.com/Varad1722/Mobile_Robotics/blob/Dhiren/ros2_ws/locobot_nodes/locobot_nodes/arm_grasp.py)
+
+#### IK Accuracy
+
+The geometric IK solver computes joint angles from live Gazebo ground truth positions with no hardcoding — the ball and robot positions are read dynamically on every grasp attempt. Across 10 trials with the ball spawning at 8 different arena positions, the gripper successfully reached the ball and positioned the fingers around it in **10/10 trials**.
+
+The IK reach clamping logic ensures graceful degradation: if the computed wrist target exceeds $L_1 + L_2 = 0.5049$ m, the target is scaled to the maximum reachable distance rather than producing invalid joint angles.
+
+#### Gripper Limitation
+
+Force-closure is not achieved due to a known Gazebo Harmonic physics limitation — the mimic constraint for the right finger (`right_finger` mimics `left_finger` with multiplier -1) is not supported by the physics engine, so only the left finger closes. The ball sits correctly between the fingers but is not lifted.
+
+In a real robot deployment using the Interbotix Python API with servo torque control, the gripper would achieve force-closure on the ball through compliant torque-controlled grasping.
+
+#### Grasp Performance Summary
+
+| Metric | Result |
+|--------|--------|
+| Trials | 10 |
+| Gripper reached ball | 10/10 (100%) |
+| Ball successfully lifted | 0/10 (0%) |
+| Failure cause | Gazebo mimic joint constraint not supported |
+| IK solver | Geometric 2-link (law of cosines) |
+| Position source | Live Gazebo GT (dynamic, no hardcoding) |
+| Pre-grasp offset | 5 cm above ball |
 
 ### 4.5 Demo Video
 
@@ -519,10 +660,6 @@ The main Gazebo launch file was updated to include `joint_state_publisher_gui` a
 | End-to-end pick+throw | 🔄 In Progress | Pending physical ball collision tuning |
 
 
-
-
-
-
 ## 7. Individual Contribution
 
 | Team Member | Primary Technical Role | Key Commits | Files |
@@ -530,6 +667,3 @@ The main Gazebo launch file was updated to include `joint_state_publisher_gui` a
 | Dhiren Makwana | Navigation, Detection, Alignment, Integration | [`213c91f`](https://github.com/Varad1722/Mobile_Robotics/commit/213c91f) [`7d5a0b8`](https://github.com/Varad1722/Mobile_Robotics/commit/7d5a0b8) [`c497bac`](https://github.com/Varad1722/Mobile_Robotics/commit/c497bac) [`f342caa`](https://github.com/Varad1722/Mobile_Robotics/commit/f342caa) [`84983b5`](https://github.com/Varad1722/Mobile_Robotics/commit/84983b5) | [`auto_navigator.py`](https://github.com/Varad1722/Mobile_Robotics/blob/Dhiren/ros2_ws/locobot_nodes/locobot_nodes/auto_navigator.py) [`base_alignment.py`](https://github.com/Varad1722/Mobile_Robotics/blob/Dhiren/ros2_ws/locobot_nodes/locobot_nodes/base_alignment.py) [`ball_detection.py`](https://github.com/Varad1722/Mobile_Robotics/blob/Dhiren/ros2_ws/locobot_nodes/locobot_nodes/ball_detection.py) [`locobot_gazebo.launch.py`](https://github.com/Varad1722/Mobile_Robotics/blob/Dhiren/ros2_ws/locobot_gazebo/launch/locobot_gazebo.launch.py) |
 | Varad Jahagirdar | Perception, Localization, Arm Grasp | [`cfed6b9`](https://github.com/Varad1722/Mobile_Robotics/commit/cfed6b9) [`bab74f0`](https://github.com/Varad1722/Mobile_Robotics/commit/bab74f0) [`bc905a7`](https://github.com/Varad1722/Mobile_Robotics/commit/bc905a7) | [`beacon_localization.py`](https://github.com/Varad1722/Mobile_Robotics/blob/Dhiren/ros2_ws/locobot_nodes/locobot_nodes/beacon_localization.py) [`arm_grasp.py`](https://github.com/Varad1722/Mobile_Robotics/blob/Dhiren/ros2_ws/locobot_nodes/locobot_nodes/arm_grasp.py) |
 | Sharat Mylavarapu | Throw Controller, End-Effector Logging, Joint State Publishing | [`8244a94`](https://github.com/Varad1722/Mobile_Robotics/commit/8244a947a0355086fd8fef7d9e8f34bc79a5ccc9) | [`arm_throw_node.py`](https://github.com/Varad1722/Mobile_Robotics/commit/8244a947a0355086fd8fef7d9e8f34bc79a5ccc9#diff-c893fe71c85f012012406d04d47af7348b311d2ea1ac73f2c8a866077b3bf7fb) [`ee_logger.py`](https://github.com/Varad1722/Mobile_Robotics/commit/8244a947a0355086fd8fef7d9e8f34bc79a5ccc9) [`joint_state_publisher.py`](https://github.com/Varad1722/Mobile_Robotics/commit/8244a947a0355086fd8fef7d9e8f34bc79a5ccc9#diff-9c44d48a6f7dfb9f0e55fe369e629ce55a56a9f44814b7429331457738318d2eR1-R79) |
-
-
-
