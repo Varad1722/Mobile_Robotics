@@ -37,18 +37,8 @@ nav_order: 3
 
 The system runs a single shared `/robot_state` topic as a finite state machine. Every node listens and reacts to state transitions.
 
-```mermaid
-stateDiagram-v2
-    [*] --> IDLE
-    IDLE --> NAVIGATING_TO_BALL : beacon estimate received
-    NAVIGATING_TO_BALL --> AT_BALL : ball visible AND dist < 1.5m
-    AT_BALL --> ALIGNED : base alignment complete
-    ALIGNED --> GRASPING : arm_grasp activates
-    GRASPING --> GRASPED : grasp sequence complete
-    GRASPED --> NAVIGATING_TO_TARGET : navigate to origin
-    NAVIGATING_TO_TARGET --> AT_TARGET : dist to origin < 0.3m
-    AT_TARGET --> DONE : throw controller fires
-```
+<img width="330" height="750" alt="Screenshot 2026-05-08 120334" src="https://github.com/user-attachments/assets/45dd2805-d623-428c-a775-93f8bf829863" />
+
 
 ### 2.2 Beacon Trilateration — Varad Jahagirdar
 
@@ -110,26 +100,8 @@ Published to `/ball_camera_pos` as a `PointStamped` in the camera frame.
 
 ### 3.2 Full System Diagram
 
-```mermaid
-graph TD
-    GZ[Gazebo Harmonic] -->|/world/.../pose/info| BL[beacon_localization]
-    GZ -->|/camera/color| BD[ball_detection]
-    GZ -->|/camera/depth| BD
-    GZ -->|/odom /tf| OTF[odom_tf_broadcaster]
-    BL -->|/ball_global_pose| AN[auto_navigator]
-    BD -->|/ball_detected /ball_camera_pos| AN
-    BD -->|/ball_camera_pos| AG[arm_grasp]
-    AN -->|/goal_pose| NAV2[Nav2 Stack]
-    AN -->|/robot_state| BA[base_alignment]
-    AN -->|/robot_state| AG
-    NAV2 -->|/cmd_vel| GZ
-    BA -->|/cmd_vel| GZ
-    BA -->|/robot_state ALIGNED| AG
-    AG -->|gz topic joint cmds| GZ
-    AG -->|/robot_state GRASPED| AN
-    AN -->|/robot_state AT_TARGET| TC[throw_controller]
-    TC -->|/cmd_vel + joint cmds| GZ
-```
+<img width="1331" height="560" alt="Screenshot 2026-05-08 120400" src="https://github.com/user-attachments/assets/1040000f-3b3f-4564-b965-b8faf059b0ba" />
+
 
 ### 3.3 Active Topics
 
