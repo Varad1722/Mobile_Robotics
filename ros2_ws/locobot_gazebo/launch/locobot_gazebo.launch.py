@@ -37,6 +37,7 @@ def generate_launch_description():
     return LaunchDescription([
         SetEnvironmentVariable(name='GZ_SIM_RESOURCE_PATH', value=mesh_path),
 
+        # Gazebo simulation
         IncludeLaunchDescription(
             PythonLaunchDescriptionSource(
                 os.path.join(gz_sim_pkg, 'launch', 'gz_sim.launch.py')
@@ -44,13 +45,7 @@ def generate_launch_description():
             launch_arguments={'gz_args': '-r ' + world_file}.items(),
         ),
 
-        Node(
-            package='joint_state_publisher',
-            executable='joint_state_publisher',
-            output='screen',
-            parameters=[{'use_sim_time': True}],
-        ),
-
+        # Robot state publisher
         Node(
             package='robot_state_publisher',
             executable='robot_state_publisher',
@@ -78,13 +73,14 @@ def generate_launch_description():
             ]
         ),
 
+        # Main ROS-Gazebo bridge
         Node(
             package='ros_gz_bridge',
             executable='parameter_bridge',
             name='gz_bridge',
             arguments=[
                 '/clock@rosgraph_msgs/msg/Clock[gz.msgs.Clock',
-                '/cmd_vel@geometry_msgs/msg/Twist@gz.msgs.Twist',
+                '/cmd_vel@geometry_msgs/msg/Twist]gz.msgs.Twist',
                 '/odom@nav_msgs/msg/Odometry[gz.msgs.Odometry',
                 '/model/locobot/tf@tf2_msgs/msg/TFMessage[gz.msgs.Pose_V',
             ],
@@ -93,9 +89,6 @@ def generate_launch_description():
             ],
             output='screen',
         ),
-
-# lidar_bridge removed - using gz_lidar_sim instead
-
 
         # Depth camera bridge
         Node(
@@ -109,7 +102,7 @@ def generate_launch_description():
             output='screen',
         ),
 
-        # Convert depth image to LaserScan for Nav2
+        # Convert depth image to LaserScan
         Node(
             package='depthimage_to_laserscan',
             executable='depthimage_to_laserscan_node',
@@ -129,9 +122,7 @@ def generate_launch_description():
             output='screen',
         ),
 
-
-# odom_tf_broadcaster removed - using gz bridge /model/locobot/tf
-
+        # Static TF map -> odom
         Node(
             package='tf2_ros',
             executable='static_transform_publisher',
@@ -139,12 +130,38 @@ def generate_launch_description():
             output='screen',
         ),
 
+        # RViz2
         Node(
             package='rviz2',
             executable='rviz2',
             name='rviz2',
-            arguments=['-d', os.path.join(os.path.expanduser('~'), 'mobile_manipulation_ws', 'src', 'locobot_gazebo', 'config', 'locobot_nav.rviz')],
             parameters=[{'use_sim_time': True}],
             output='screen',
+        ),
+
+        # Joint State Publisher GUI + Gazebo bridge
+        # Starts after robot spawns (10s delay)
+        # GUI publishes to /joint_states
+        # joint_state_to_gz sends to Gazebo joint controllers
+        TimerAction(
+            period=10.0,
+            actions=[
+                Node(
+                    package='joint_state_publisher_gui',
+                    executable='joint_state_publisher_gui',
+                    name='joint_state_publisher_gui',
+                    output='screen',
+                    parameters=[{
+                        'robot_description': urdf,
+                        'use_sim_time': True,
+                    }],
+                ),
+                Node(
+                    package='locobot_nodes',
+                    executable='joint_state_to_gz',
+                    name='joint_state_to_gz',
+                    output='screen',
+                ),
+            ]
         ),
     ])
