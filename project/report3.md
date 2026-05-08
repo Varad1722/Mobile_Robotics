@@ -234,12 +234,10 @@ The ball detection system relies on a specific magenta HSV color range. This cre
 |---|---|---|---|
 | Dhiren Makwana | Navigation, Detection, Alignment, Integration | [`213c91f`](https://github.com/Varad1722/Mobile_Robotics/commit/213c91f) [`7d5a0b8`](https://github.com/Varad1722/Mobile_Robotics/commit/7d5a0b8) [`c497bac`](https://github.com/Varad1722/Mobile_Robotics/commit/c497bac) [`f342caa`](https://github.com/Varad1722/Mobile_Robotics/commit/f342caa) [`84983b5`](https://github.com/Varad1722/Mobile_Robotics/commit/84983b5) | [`auto_navigator.py`](https://github.com/Varad1722/Mobile_Robotics/blob/Dhiren/ros2_ws/locobot_nodes/locobot_nodes/auto_navigator.py) [`base_alignment.py`](https://github.com/Varad1722/Mobile_Robotics/blob/Dhiren/ros2_ws/locobot_nodes/locobot_nodes/base_alignment.py) [`ball_detection.py`](https://github.com/Varad1722/Mobile_Robotics/blob/Dhiren/ros2_ws/locobot_nodes/locobot_nodes/ball_detection.py) [`locobot_gazebo.launch.py`](https://github.com/Varad1722/Mobile_Robotics/blob/Dhiren/ros2_ws/locobot_gazebo/launch/locobot_gazebo.launch.py) |
 | Varad Jahagirdar | Perception, Localization, Arm Grasp | [`cfed6b9`](https://github.com/Varad1722/Mobile_Robotics/commit/cfed6b9) [`bab74f0`](https://github.com/Varad1722/Mobile_Robotics/commit/bab74f0) [`bc905a7`](https://github.com/Varad1722/Mobile_Robotics/commit/bc905a7) | [`beacon_localization.py`](https://github.com/Varad1722/Mobile_Robotics/blob/Dhiren/ros2_ws/locobot_nodes/locobot_nodes/beacon_localization.py) [`arm_grasp.py`](https://github.com/Varad1722/Mobile_Robotics/blob/Dhiren/ros2_ws/locobot_nodes/locobot_nodes/arm_grasp.py) |
-| Sharat Mylavarapu |   | — | arm_throw_node.py - 
-8244a94
+| Sharat Mylavarapu | arm_throw_node.py  | 8244a94 |  
 https://github.com/Varad1722/Mobile_Robotics/commit/8244a947a0355086fd8fef7d9e8f34bc79a5ccc9 |
-| Sharat Mylavarapu |   | — | ee_logger.py - 
-8244a94
+| Sharat Mylavarapu |   ee_logger.py |8244a94  | 
 https://github.com/Varad1722/Mobile_Robotics/commit/8244a947a0355086fd8fef7d9e8f34bc79a5ccc9#diff-c893fe71c85f012012406d04d47af7348b311d2ea1ac73f2c8a866077b3bf7fb
-| Sharat Mylavarapu |   | — | joint_state_publisher.py -  8244a94
+| Sharat Mylavarapu | joint_state_publisher.py   |  8244a94 |   
 https://github.com/Varad1722/Mobile_Robotics/commit/8244a947a0355086fd8fef7d9e8f34bc79a5ccc9#diff-9c44d48a6f7dfb9f0e55fe369e629ce55a56a9f44814b7429331457738318d2eR1-R79
 
